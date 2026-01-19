@@ -2,8 +2,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB (V5)")
-st.success("Mise à jour : Agence en % & Vocabulaire Fidélite (Plus Value)")
+st.title("🏢 Calculatrice Rentabilité MDB (V6)")
+st.success("✅ Modèle Validé : Portage (7% + 1500€ dossier) | Notaire 3% | Hypo 1.5%")
 st.markdown("---")
 
 # --- 1. ACQUISITION ---
@@ -14,8 +14,7 @@ with col1:
     prix_offre = st.number_input("Prix Offre Net Vendeur (€)", value=240000, step=1000)
     
 with col2:
-    # MODIFICATION : Entrée en % pour les frais d'agence
-    taux_agence_acq = st.number_input("Taux Agence Achat (%)", value=0.0, step=0.5, help="Ex: 4% du prix net vendeur")
+    taux_agence_acq = st.number_input("Taux Agence Achat (%)", value=0.0, step=0.5)
     frais_agence_acq = prix_offre * (taux_agence_acq / 100)
     if frais_agence_acq > 0:
         st.info(f"Frais Agence : {frais_agence_acq:,.0f} €")
@@ -66,18 +65,23 @@ budget_travaux_base = surface * cout_travaux_m2
 honoraires_conducteur = budget_travaux_base * 0.05 
 total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
 
-# B. Enveloppe Physique
+# B. Enveloppe Physique (Base pour le calcul des 75%)
 enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
 
-# C. Frais Financiers
+# C. Frais Financiers (INTEGRÉS)
 # 1. Hypothèque : 1,5% du prix du bien
 frais_hypotheque = prix_offre * 0.015
 # 2. Levée : Forfait 1500€
 frais_levee = 1500
-# 3. Bancaires (Portage) : 7% sur 75% de l'enveloppe globale
+
+# 3. Bancaires / Portage : (7% sur 75%) + 1500€ de dossier forfaitaire
 duree_totale = duree_mois + retard_mois
 base_portage = enveloppe_physique * 0.75
-frais_bancaires_portage = base_portage * 0.07 * (duree_totale / 12)
+interets_portage = base_portage * 0.07 * (duree_totale / 12)
+frais_dossier_banque = 1500 # Forfait intégré
+
+# C'est ici que la fusion se fait :
+total_cout_portage_banque = interets_portage + frais_dossier_banque
 
 # D. Frais Structure
 frais_sep = enveloppe_physique * 0.02
@@ -86,12 +90,12 @@ frais_sep = enveloppe_physique * 0.02
 cout_charges = (charges_mensuelles * duree_totale) + (taxe_fonciere * (duree_totale/12))
 
 # F. Total Général
-total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + frais_bancaires_portage + frais_sep + cout_charges
+total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges
 
 # G. Sortie & Marge
 prix_revente_total = surface * prix_revente_m2
 montant_agence_revente = prix_revente_total * (taux_agence_revente / 100)
-net_vendeur_reel = prix_revente_total - montant_agence_revente # C'est ce qui rentre vraiment en banque
+net_vendeur_reel = prix_revente_total - montant_agence_revente
 
 total_plus_value = net_vendeur_reel - total_cout_operation
 pourcentage_marge = (total_plus_value / total_cout_operation) * 100
@@ -100,27 +104,25 @@ pourcentage_marge = (total_plus_value / total_cout_operation) * 100
 st.markdown("---")
 st.header("📊 Bilan Financier")
 
-# MODIFICATION : Affichage Prix de Revente (Brut) & Total Plus Value
 c1, c2, c3 = st.columns(3)
-c1.metric("Prix de revente", f"{prix_revente_total:,.0f} €")
+c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
 c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
 c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
 
 st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
 
-with st.expander("🔎 Voir le détail complet"):
-    st.write(f"**Prix Revente (Brut)** : {prix_revente_total:,.0f} €")
-    st.write(f"- Frais Agence Revente ({taux_agence_revente}%) : -{montant_agence_revente:,.0f} €")
-    st.write(f"= **Net Vendeur Réel** : {net_vendeur_reel:,.0f} €")
-    st.write("---")
-    st.write(f"**- Total Coût Opération** : -{total_cout_operation:,.0f} €")
-    st.write(f"= **Total Plus Value** : {total_plus_value:,.0f} €")
-    st.write("---")
-    st.write("**Détail des Coûts :**")
-    st.write(f"- Enveloppe Physique (Achat+Travaux) : {enveloppe_physique:,.0f} €")
-    st.write(f"- Frais Bancaires (Portage 7%) : {frais_bancaires_portage:,.0f} €")
-    st.write(f"- Garanties (Hypo + Levée) : {frais_hypotheque + frais_levee:,.0f} €")
-    st.write(f"- Frais Structure (SEP 2%) : {frais_sep:,.0f} €")
+with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
+    st.write(f"**1. Acquisition & Travaux**")
+    st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
+    
+    st.write(f"**2. Banque & Garanties**")
+    st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
+    st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
+    st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
+    
+    st.write(f"**3. Structure & Vie**")
+    st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
+    st.write(f"- Charges & Taxe Foncière : {cout_charges:,.0f} €")
 
 if pourcentage_marge < 25:
     st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
