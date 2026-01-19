@@ -1,25 +1,28 @@
 import streamlit as st
 
-# Configuration de la page
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB")
+st.title("🏢 Calculatrice Rentabilité MDB (V5)")
+st.success("Mise à jour : Agence en % & Vocabulaire Fidélite (Plus Value)")
 st.markdown("---")
 
-# --- 1. DONNÉES D'ENTRÉE (INPUTS) ---
-st.header("1. Acquisition & Projet")
-
+# --- 1. ACQUISITION ---
+st.header("1. Acquisition")
 col1, col2 = st.columns(2)
 with col1:
-    surface = st.number_input("Surface (m²)", value=46.0, step=1.0)
-    prix_offre = st.number_input("Prix Offre (€)", value=240000, step=1000)
-    frais_agence_acq = st.number_input("Frais Agence Achat (€)", value=0, step=500)
-
+    surface = st.number_input("Surface (m²)", value=46.6, step=0.1)
+    prix_offre = st.number_input("Prix Offre Net Vendeur (€)", value=240000, step=1000)
+    
 with col2:
-    duree_mois = st.slider("Durée du projet (mois)", min_value=6, max_value=24, value=12)
-    # Anticipation proactive : Retard possible
-    retard_mois = st.slider("Anticipation Retard (mois)", 0, 12, 0)
-    prix_revente_m2 = st.number_input("Prix Revente estimé (€/m²)", value=10500, step=100)
+    # MODIFICATION : Entrée en % pour les frais d'agence
+    taux_agence_acq = st.number_input("Taux Agence Achat (%)", value=0.0, step=0.5, help="Ex: 4% du prix net vendeur")
+    frais_agence_acq = prix_offre * (taux_agence_acq / 100)
+    if frais_agence_acq > 0:
+        st.info(f"Frais Agence : {frais_agence_acq:,.0f} €")
+    
+    # Notaire 3% (Standard MDB)
+    frais_notaire = prix_offre * 0.03
+    st.info(f"Frais Notaire (3% MDB) : {frais_notaire:,.0f} €")
 
 # --- 2. TRAVAUX & ETUDES ---
 st.header("2. Travaux & Études")
@@ -29,86 +32,99 @@ type_reno = st.selectbox("Type de Rénovation",
 col3, col4 = st.columns(2)
 with col3:
     cout_travaux_m2 = st.number_input("Coût Travaux (€/m²)", value=1500, step=50)
-    # Frais annexes fixes selon tes fichiers
-    geometre = st.number_input("Géomètre (€)", value=1000)
-    ingenieur = st.number_input("Ingénieur Béton (€)", value=1000)
+    architecte = st.number_input("Architecte (MOVA=0€)", value=0)
 
 with col4:
-    age_frais = st.number_input("Frais AGE (€)", value=2000)
-    permis = st.number_input("Permis / DP (€)", value=0)
-    architecte = st.number_input("Architecte (MOVA = 0€)", value=0)
+    geometre = st.number_input("Géomètre (€)", value=1000)
+    ingenieur = st.number_input("Ingénieur Béton (€)", value=1000)
+    age_frais = st.number_input("Frais AGE / RCP (€)", value=2000)
+    autres_frais_travaux = st.number_input("Autres (Permis, etc.) (€)", value=0)
 
-# --- 3. CALCULS AUTOMATIQUES (FORMULES MOVA) ---
+# --- 3. PARAMÈTRES TEMPORELS ---
+st.header("3. Temps & Charges")
+col5, col6 = st.columns(2)
+with col5:
+    duree_mois = st.slider("Durée projet (mois)", 6, 24, 10)
+    retard_mois = st.slider("Marge sécurité retard (mois)", 0, 12, 0)
+    
+with col6:
+    charges_mensuelles = st.number_input("Charges Copro Mensuelles (€)", value=100)
+    taxe_fonciere = st.number_input("Taxe Foncière Annuelle (€)", value=917)
 
-# Calculs intermédiaires
-budget_travaux = surface * cout_travaux_m2
-honoraires_conducteur = budget_travaux * 0.05  # 5% conducteur chantier
-total_travaux_etudes = budget_travaux + honoraires_conducteur + geometre + ingenieur + age_frais + permis + architecte
+# --- 4. REVENTE ---
+st.header("4. Revente")
+col7, col8 = st.columns(2)
+with col7:
+    prix_revente_m2 = st.number_input("Prix Revente estimé (€/m²)", value=10500, step=100)
+with col8:
+    taux_agence_revente = st.number_input("Taux Agence Revente (%)", value=4.0, step=0.5)
 
-# Frais Notaire (estimé à 7.5% si classique, ou entrée manuelle si besoin, ici calcul auto pour rapidité)
-frais_notaire = prix_offre * 0.075 
+# --- 5. CALCULS DÉTAILLÉS ---
 
-# Enveloppe Globale "Physique" (Achat + Frais + Travaux) pour base de calcul bancaire
-enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux_etudes
+# A. Travaux
+budget_travaux_base = surface * cout_travaux_m2
+honoraires_conducteur = budget_travaux_base * 0.05 
+total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
 
-# --- FRAIS FINANCIERS & MOVA ---
-# Frais Bancaire Dossier 1.5%
-frais_bancaire_dossier = prix_offre * 0.015 
+# B. Enveloppe Physique
+enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
 
-# Hypothèque (Forfait moyen)
-frais_hypotheque = 1500 + (prix_offre * 0.003) # Estimation proactive
-frais_levee = 1500 # Forfait
-
-# Frais de Portage : 7% sur 75% de l'enveloppe globale
-# Attention : calculé sur la durée TOTALE (initiale + retard)
+# C. Frais Financiers
+# 1. Hypothèque : 1,5% du prix du bien
+frais_hypotheque = prix_offre * 0.015
+# 2. Levée : Forfait 1500€
+frais_levee = 1500
+# 3. Bancaires (Portage) : 7% sur 75% de l'enveloppe globale
 duree_totale = duree_mois + retard_mois
 base_portage = enveloppe_physique * 0.75
-cout_portage = base_portage * 0.07 * (duree_totale / 12)
+frais_bancaires_portage = base_portage * 0.07 * (duree_totale / 12)
 
-# Frais SEP : 2% montant du projet
-# Le "montant du projet" inclut généralement tout sauf la marge.
-frais_sep = enveloppe_physique * 0.02 
+# D. Frais Structure
+frais_sep = enveloppe_physique * 0.02
 
-# Frais Courants (Taxe foncière, électricité...)
-# Estimation : ~200€/mois (Proactif : mieux vaut surestimer)
-frais_courants = 200 * duree_totale
+# E. Charges
+cout_charges = (charges_mensuelles * duree_totale) + (taxe_fonciere * (duree_totale/12))
 
-# COÛT TOTAL DE L'OPÉRATION
-total_cout = (enveloppe_physique + frais_bancaire_dossier + frais_hypotheque + 
-              frais_levee + cout_portage + frais_sep + frais_courants)
+# F. Total Général
+total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + frais_bancaires_portage + frais_sep + cout_charges
 
-# REVENTE
+# G. Sortie & Marge
 prix_revente_total = surface * prix_revente_m2
-frais_agence_revente = prix_revente_total * 0.04 # Est. 4% ou forfait
-net_vendeur = prix_revente_total - frais_agence_revente
+montant_agence_revente = prix_revente_total * (taux_agence_revente / 100)
+net_vendeur_reel = prix_revente_total - montant_agence_revente # C'est ce qui rentre vraiment en banque
 
-# MARGE
-marge_net = net_vendeur - total_cout
-pourcentage_marge = (marge_net / total_cout) * 100
+total_plus_value = net_vendeur_reel - total_cout_operation
+pourcentage_marge = (total_plus_value / total_cout_operation) * 100
 
-# --- 4. RÉSULTATS ---
+# --- AFFICHAGE ---
 st.markdown("---")
-st.header("📊 Résultats de l'Opération")
+st.header("📊 Bilan Financier")
 
-col_res1, col_res2, col_res3 = st.columns(3)
-col_res1.metric("Coût Total Projet", f"{total_cout:,.0f} €")
-col_res2.metric("Net Vendeur", f"{net_vendeur:,.0f} €")
-col_res3.metric("Marge Nette (€)", f"{marge_net:,.0f} €", delta_color="normal")
+# MODIFICATION : Affichage Prix de Revente (Brut) & Total Plus Value
+c1, c2, c3 = st.columns(3)
+c1.metric("Prix de revente", f"{prix_revente_total:,.0f} €")
+c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
+c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
 
 st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
 
-if pourcentage_marge < 25:
-    st.error("⚠️ Attention : Marge inférieure à 25% (Objectif MDB Partenaire)")
-elif pourcentage_marge < 40:
-    st.warning("✅ Bon projet (Standard). Marge < 40% (Objectif Club MOVA)")
-else:
-    st.success("🚀 Excellent projet ! Marge > 40%")
+with st.expander("🔎 Voir le détail complet"):
+    st.write(f"**Prix Revente (Brut)** : {prix_revente_total:,.0f} €")
+    st.write(f"- Frais Agence Revente ({taux_agence_revente}%) : -{montant_agence_revente:,.0f} €")
+    st.write(f"= **Net Vendeur Réel** : {net_vendeur_reel:,.0f} €")
+    st.write("---")
+    st.write(f"**- Total Coût Opération** : -{total_cout_operation:,.0f} €")
+    st.write(f"= **Total Plus Value** : {total_plus_value:,.0f} €")
+    st.write("---")
+    st.write("**Détail des Coûts :**")
+    st.write(f"- Enveloppe Physique (Achat+Travaux) : {enveloppe_physique:,.0f} €")
+    st.write(f"- Frais Bancaires (Portage 7%) : {frais_bancaires_portage:,.0f} €")
+    st.write(f"- Garanties (Hypo + Levée) : {frais_hypotheque + frais_levee:,.0f} €")
+    st.write(f"- Frais Structure (SEP 2%) : {frais_sep:,.0f} €")
 
-# Détails des coûts pour analyse
-with st.expander("Voir le détail des coûts (Cliquer pour déplier)"):
-    st.write(f"**Acquisition :** {prix_offre + frais_notaire + frais_agence_acq:,.0f} €")
-    st.write(f"**Travaux & Études :** {total_travaux_etudes:,.0f} €")
-    st.write(f"**Frais Bancaires & Portage :** {frais_bancaire_dossier + cout_portage + frais_hypotheque:,.0f} €")
-    st.write(f"dont Coût Portage (7%): {cout_portage:,.0f} €")
-    st.write(f"**Frais SEP (2%) :** {frais_sep:,.0f} €")
-    st.write(f"**Frais Courants :** {frais_courants:,.0f} €")
+if pourcentage_marge < 25:
+    st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
+elif pourcentage_marge < 40:
+    st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
+else:
+    st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
