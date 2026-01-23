@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
 st.title("🏢 Calculatrice Rentabilité MDB (V8)")
-st.success("✅ V8 : Ajout indicateur Prix au m² à l'achat")
+st.success("✅ V8 : Prix m² achat | Agence Flexible | Charges Annuelles")
 st.markdown("---")
 
 # --- 1. ACQUISITION ---
@@ -14,7 +14,7 @@ with col1:
     # MODIFICATION : Intitulé changé
     prix_offre = st.number_input("Prix d'achat (€)", value=240000, step=1000)
     
-    # AJOUT DEMANDÉ (V8) : Calcul du prix au m²
+    # AJOUT DEMANDÉ : Calcul du prix au m²
     if surface > 0:
         prix_m2_achat = prix_offre / surface
         st.info(f"Prix au m² : {prix_m2_achat:,.0f} €/m²")
@@ -71,3 +71,81 @@ col7, col8 = st.columns(2)
 with col7:
     prix_revente_m2 = st.number_input("Prix Revente estimé (€/m²)", value=10500, step=100)
 with col8:
+    # MODIFICATION : Remplacement du taux % par un montant fixe
+    montant_agence_revente = st.number_input("Frais Agence Revente (€)", value=10000, step=500)
+
+# --- 5. CALCULS DÉTAILLÉS (Moteur V6) ---
+
+# A. Travaux
+budget_travaux_base = surface * cout_travaux_m2
+honoraires_conducteur = budget_travaux_base * 0.05 
+total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
+
+# B. Enveloppe Physique (Base pour le calcul des 75%)
+enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
+
+# C. Frais Financiers (INTEGRÉS V6)
+# 1. Hypothèque : 1,5% du prix du bien
+frais_hypotheque = prix_offre * 0.015
+# 2. Levée : Forfait 1500€
+frais_levee = 1500
+
+# 3. Bancaires / Portage : (7% sur 75%) + 1500€ de dossier forfaitaire
+duree_totale = duree_mois + retard_mois
+base_portage = enveloppe_physique * 0.75
+interets_portage = base_portage * 0.07 * (duree_totale / 12)
+frais_dossier_banque = 1500 # Forfait intégré
+
+# Fusion :
+total_cout_portage_banque = interets_portage + frais_dossier_banque
+
+# D. Frais Structure
+frais_sep = enveloppe_physique * 0.02
+
+# E. Charges (MODIFICATION : Calcul Prorata depuis l'Annuel)
+cout_charges_copro = charges_annuelles * (duree_totale / 12)
+cout_taxe_fonciere = taxe_fonciere * (duree_totale / 12)
+cout_charges_totales = cout_charges_copro + cout_taxe_fonciere
+
+# F. Total Général
+total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
+
+# G. Sortie & Marge
+prix_revente_total = surface * prix_revente_m2
+# Frais agence revente est maintenant une saisie directe (montant_agence_revente)
+net_vendeur_reel = prix_revente_total - montant_agence_revente
+
+total_plus_value = net_vendeur_reel - total_cout_operation
+pourcentage_marge = (total_plus_value / total_cout_operation) * 100
+
+# --- AFFICHAGE ---
+st.markdown("---")
+st.header("📊 Bilan Financier")
+
+c1, c2, c3 = st.columns(3)
+c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
+c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
+c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
+
+st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
+
+# MODIFICATION : Conservation STRICTE du bloc V6 demandé
+with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
+    st.write(f"**1. Acquisition & Travaux**")
+    st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
+    
+    st.write(f"**2. Banque & Garanties**")
+    st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
+    st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
+    st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
+    
+    st.write(f"**3. Structure & Vie**")
+    st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
+    st.write(f"- Charges & Taxe Foncière : {cout_charges_totales:,.0f} €")
+
+if pourcentage_marge < 25:
+    st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
+elif pourcentage_marge < 40:
+    st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
+else:
+    st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
