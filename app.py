@@ -2,8 +2,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB (V13)")
-st.success("✅ V13 : Réintégration du Récapitulatif Détaillé (Expert)")
+st.title("🏢 Calculatrice Rentabilité MDB (V14)")
+st.success("✅ V14 : Durée projet ajustée (3 à 18 mois)")
 st.markdown("---")
 
 # Création des onglets
@@ -140,7 +140,8 @@ with tab_expert:
     st.subheader("3. Temps & Charges")
     col5, col6 = st.columns(2)
     with col5:
-        duree_mois = st.slider("Durée projet (mois)", 6, 24, 10, key="e_duree")
+        # MODIFICATION V14 : Durée de 3 à 18 mois
+        duree_mois = st.slider("Durée projet (mois)", 3, 18, 10, key="e_duree")
         retard_mois = st.slider("Marge sécurité retard (mois)", 0, 12, 0, key="e_retard")
         
     with col6:
@@ -226,7 +227,7 @@ with tab_expert:
         st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
 
     # ==========================================================
-    # LE VOICI : LE RÉCAPITULATIF DÉTAILLÉ (RESTAURÉ)
+    # RÉCAPITULATIF DÉTAILLÉ
     # ==========================================================
     st.markdown("---")
     with st.expander("🔎 VOIR LE DÉTAIL DES COÛTS (VÉRIFICATION)", expanded=True):
