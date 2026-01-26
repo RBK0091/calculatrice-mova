@@ -2,150 +2,213 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB (V8)")
-st.success("✅ V8 : Prix m² achat | Agence Flexible | Charges Annuelles")
+st.title("🏢 Calculatrice Rentabilité MDB (V9)")
 st.markdown("---")
 
-# --- 1. ACQUISITION ---
-st.header("1. Acquisition")
-col1, col2 = st.columns(2)
-with col1:
-    surface = st.number_input("Surface (m²)", value=46.6, step=0.1)
-    # MODIFICATION : Intitulé changé
-    prix_offre = st.number_input("Prix d'achat (€)", value=240000, step=1000)
+# Création des onglets
+tab_flash, tab_expert = st.tabs(["⚡ CALCUL FLASH (Visite)", "🏢 CALCUL EXPERT (Détaillé)"])
+
+# ==============================================================================
+# ONGLET 1 : CALCUL FLASH (SIMPLE)
+# ==============================================================================
+with tab_flash:
+    st.header("⚡ Rentabilité Immédiate")
+    st.info("Mode simplifié pour prise de décision rapide en visite.")
+
+    # 1. ACQUISITION
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        # Utilisation de clés uniques (key=) pour éviter les conflits avec l'autre onglet
+        surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
+        prix_flash = st.number_input("Prix d'achat (€)", value=200000, step=1000, key="f_prix")
     
-    # AJOUT DEMANDÉ : Calcul du prix au m²
-    if surface > 0:
-        prix_m2_achat = prix_offre / surface
-        st.info(f"Prix au m² : {prix_m2_achat:,.0f} €/m²")
+    with col_f2:
+        # Affichage immédiat du Prix m2
+        if surf_flash > 0:
+            pm2_flash = prix_flash / surf_flash
+            st.metric("Prix Achat au m²", f"{pm2_flash:,.0f} €/m²")
+        else:
+            st.metric("Prix Achat au m²", "0 €/m²")
+
+    # 2. TRAVAUX (FLEXIBLE)
+    st.write("---")
+    st.write("🛠️ Estimation Travaux")
+    mode_travaux_flash = st.radio("Mode de calcul travaux :", ["Par m² (€/m²)", "Forfait Global (€)"], horizontal=True, key="f_mode_travaux")
     
-with col2:
-    # MODIFICATION : Choix du mode de saisie pour les frais d'agence
-    st.write("Frais d'agence (Achat)")
-    mode_agence = st.radio("Mode de saisie", ["En %", "Montant Fixe (€)"], horizontal=True, label_visibility="collapsed")
-    
-    if mode_agence == "En %":
-        taux_agence = st.number_input("Taux Agence (%)", value=0.0, step=0.5)
-        frais_agence_acq = prix_offre * (taux_agence / 100)
-        if frais_agence_acq > 0:
-            st.info(f"Montant : {frais_agence_acq:,.0f} €")
+    if mode_travaux_flash == "Par m² (€/m²)":
+        cout_m2_flash = st.number_input("Coût au m² (€)", value=2000, step=100, key="f_cout_m2")
+        total_travaux_flash = surf_flash * cout_m2_flash
+        st.write(f"👉 Soit un budget travaux de : **{total_travaux_flash:,.0f} €**")
     else:
-        frais_agence_acq = st.number_input("Montant Agence (€)", value=0, step=500)
+        total_travaux_flash = st.number_input("Montant Total Travaux (€)", value=40000, step=1000, key="f_total_travaux")
+
+    # 3. RENTABILITÉ
+    st.write("---")
+    st.write("💰 Sortie & Marge")
     
-    # Notaire 3% (Standard MDB)
-    frais_notaire = prix_offre * 0.03
-    st.info(f"Frais Notaire (3% MDB) : {frais_notaire:,.0f} €")
-
-# --- 2. TRAVAUX & ETUDES ---
-st.header("2. Travaux & Études")
-type_reno = st.selectbox("Type de Rénovation", 
-                         ["Rafraichissement (400-800€)", "Rénovation Simple (1200-1400€)", "Lourde (1500-1800€)", "Luxe (>2000€)"])
-
-col3, col4 = st.columns(2)
-with col3:
-    cout_travaux_m2 = st.number_input("Coût Travaux (€/m²)", value=1500, step=50)
-    # MODIFICATION : Intitulé changé
-    architecte = st.number_input("Architecte et suivi de travaux (€)", value=0)
-
-with col4:
-    geometre = st.number_input("Géomètre (€)", value=1000)
-    ingenieur = st.number_input("Ingénieur Béton (€)", value=1000)
-    age_frais = st.number_input("Frais AGE / RCP (€)", value=2000)
-    autres_frais_travaux = st.number_input("Autres (Permis, etc.) (€)", value=0)
-
-# --- 3. PARAMÈTRES TEMPORELS ---
-st.header("3. Temps & Charges")
-col5, col6 = st.columns(2)
-with col5:
-    duree_mois = st.slider("Durée projet (mois)", 6, 24, 10)
-    retard_mois = st.slider("Marge sécurité retard (mois)", 0, 12, 0)
+    # Pour avoir une rentabilité, il faut un prix de revente
+    prix_revente_flash = st.number_input("Prix Revente Estimé (€)", value=340000, step=5000, help="Obligatoire pour calculer le %", key="f_revente")
     
-with col6:
-    # MODIFICATION : Saisie en Annuel
-    charges_annuelles = st.number_input("Charges Copro ANNUELLES (€)", value=1200, help="Montant total par an")
-    taxe_fonciere = st.number_input("Taxe Foncière ANNUELLE (€)", value=917)
-
-# --- 4. REVENTE ---
-st.header("4. Revente")
-col7, col8 = st.columns(2)
-with col7:
-    prix_revente_m2 = st.number_input("Prix Revente estimé (€/m²)", value=10500, step=100)
-with col8:
-    # MODIFICATION : Remplacement du taux % par un montant fixe
-    montant_agence_revente = st.number_input("Frais Agence Revente (€)", value=10000, step=500)
-
-# --- 5. CALCULS DÉTAILLÉS (Moteur V6) ---
-
-# A. Travaux
-budget_travaux_base = surface * cout_travaux_m2
-honoraires_conducteur = budget_travaux_base * 0.05 
-total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
-
-# B. Enveloppe Physique (Base pour le calcul des 75%)
-enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
-
-# C. Frais Financiers (INTEGRÉS V6)
-# 1. Hypothèque : 1,5% du prix du bien
-frais_hypotheque = prix_offre * 0.015
-# 2. Levée : Forfait 1500€
-frais_levee = 1500
-
-# 3. Bancaires / Portage : (7% sur 75%) + 1500€ de dossier forfaitaire
-duree_totale = duree_mois + retard_mois
-base_portage = enveloppe_physique * 0.75
-interets_portage = base_portage * 0.07 * (duree_totale / 12)
-frais_dossier_banque = 1500 # Forfait intégré
-
-# Fusion :
-total_cout_portage_banque = interets_portage + frais_dossier_banque
-
-# D. Frais Structure
-frais_sep = enveloppe_physique * 0.02
-
-# E. Charges (MODIFICATION : Calcul Prorata depuis l'Annuel)
-cout_charges_copro = charges_annuelles * (duree_totale / 12)
-cout_taxe_fonciere = taxe_fonciere * (duree_totale / 12)
-cout_charges_totales = cout_charges_copro + cout_taxe_fonciere
-
-# F. Total Général
-total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
-
-# G. Sortie & Marge
-prix_revente_total = surface * prix_revente_m2
-# Frais agence revente est maintenant une saisie directe (montant_agence_revente)
-net_vendeur_reel = prix_revente_total - montant_agence_revente
-
-total_plus_value = net_vendeur_reel - total_cout_operation
-pourcentage_marge = (total_plus_value / total_cout_operation) * 100
-
-# --- AFFICHAGE ---
-st.markdown("---")
-st.header("📊 Bilan Financier")
-
-c1, c2, c3 = st.columns(3)
-c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
-c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
-c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
-
-st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
-
-# MODIFICATION : Conservation STRICTE du bloc V6 demandé
-with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
-    st.write(f"**1. Acquisition & Travaux**")
-    st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
+    # CALCULS SIMPLIFIÉS (Comme demandé : Achat + Travaux uniquement)
+    # Note : Je rajoute quand même une petite case optionnelle pour les notaires pour ne pas te piéger
+    include_notaire = st.checkbox("Inclure Notaire (3%) dans le coût ?", value=False, key="f_check_notaire")
     
-    st.write(f"**2. Banque & Garanties**")
-    st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
-    st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
-    st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
-    
-    st.write(f"**3. Structure & Vie**")
-    st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
-    st.write(f"- Charges & Taxe Foncière : {cout_charges_totales:,.0f} €")
+    cout_total_flash = prix_flash + total_travaux_flash
+    if include_notaire:
+        cout_total_flash += (prix_flash * 0.03)
 
-if pourcentage_marge < 25:
-    st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
-elif pourcentage_marge < 40:
-    st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
-else:
-    st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
+    marge_flash = prix_revente_flash - cout_total_flash
+    
+    if cout_total_flash > 0:
+        renta_flash = (marge_flash / cout_total_flash) * 100
+    else:
+        renta_flash = 0
+
+    # AFFICHAGE RÉSULTATS FLASH
+    c_res1, c_res2 = st.columns(2)
+    c_res1.metric("Coût Total (Achat+Tx)", f"{cout_total_flash:,.0f} €")
+    c_res2.metric("Rentabilité Brute", f"{renta_flash:.2f} %")
+
+    # JAUGE DE DÉCISION
+    if renta_flash < 25:
+        st.error(f"🛑 {renta_flash:.1f}% - NE PAS ACHETER (Trop faible)")
+    elif renta_flash < 40:
+        st.warning(f"⚠️ {renta_flash:.1f}% - PROJET MOYEN (Cible Partenaire)")
+    else:
+        st.success(f"🚀 {renta_flash:.1f}% - GO ! (Cible Club MOVA)")
+
+
+# ==============================================================================
+# ONGLET 2 : CALCUL EXPERT (LE CODE V8 COMPLET)
+# ==============================================================================
+with tab_expert:
+    st.header("🏢 Analyse Détaillée (Certifiée)")
+    st.success("✅ V8 : Moteur complet avec Frais Bancaires, SEP, Hypothèque...")
+
+    # --- 1. ACQUISITION ---
+    st.subheader("1. Acquisition")
+    col1, col2 = st.columns(2)
+    with col1:
+        surface = st.number_input("Surface (m²)", value=46.6, step=0.1, key="e_surf")
+        prix_offre = st.number_input("Prix d'achat (€)", value=240000, step=1000, key="e_prix")
+        
+        if surface > 0:
+            prix_m2_achat = prix_offre / surface
+            st.info(f"Prix au m² : {prix_m2_achat:,.0f} €/m²")
+        
+    with col2:
+        st.write("Frais d'agence (Achat)")
+        mode_agence = st.radio("Mode de saisie", ["En %", "Montant Fixe (€)"], horizontal=True, label_visibility="collapsed", key="e_mode_agence")
+        
+        if mode_agence == "En %":
+            taux_agence = st.number_input("Taux Agence (%)", value=0.0, step=0.5, key="e_taux_agence")
+            frais_agence_acq = prix_offre * (taux_agence / 100)
+            if frais_agence_acq > 0:
+                st.info(f"Montant : {frais_agence_acq:,.0f} €")
+        else:
+            frais_agence_acq = st.number_input("Montant Agence (€)", value=0, step=500, key="e_montant_agence")
+        
+        frais_notaire = prix_offre * 0.03
+        st.info(f"Frais Notaire (3% MDB) : {frais_notaire:,.0f} €")
+
+    # --- 2. TRAVAUX & ETUDES ---
+    st.subheader("2. Travaux & Études")
+    type_reno = st.selectbox("Type de Rénovation", 
+                             ["Rafraichissement (400-800€)", "Rénovation Simple (1200-1400€)", "Lourde (1500-1800€)", "Luxe (>2000€)"], key="e_type_reno")
+
+    col3, col4 = st.columns(2)
+    with col3:
+        cout_travaux_m2 = st.number_input("Coût Travaux (€/m²)", value=1500, step=50, key="e_cout_tx")
+        architecte = st.number_input("Architecte et suivi de travaux (€)", value=0, key="e_archi")
+
+    with col4:
+        geometre = st.number_input("Géomètre (€)", value=1000, key="e_geo")
+        ingenieur = st.number_input("Ingénieur Béton (€)", value=1000, key="e_inge")
+        age_frais = st.number_input("Frais AGE / RCP (€)", value=2000, key="e_age")
+        autres_frais_travaux = st.number_input("Autres (Permis, etc.) (€)", value=0, key="e_autres")
+
+    # --- 3. PARAMÈTRES TEMPORELS ---
+    st.subheader("3. Temps & Charges")
+    col5, col6 = st.columns(2)
+    with col5:
+        duree_mois = st.slider("Durée projet (mois)", 6, 24, 10, key="e_duree")
+        retard_mois = st.slider("Marge sécurité retard (mois)", 0, 12, 0, key="e_retard")
+        
+    with col6:
+        charges_annuelles = st.number_input("Charges Copro ANNUELLES (€)", value=1200, help="Montant total par an", key="e_charges")
+        taxe_fonciere = st.number_input("Taxe Foncière ANNUELLE (€)", value=917, key="e_tf")
+
+    # --- 4. REVENTE ---
+    st.subheader("4. Revente")
+    col7, col8 = st.columns(2)
+    with col7:
+        prix_revente_m2 = st.number_input("Prix Revente estimé (€/m²)", value=10500, step=100, key="e_rev_m2")
+    with col8:
+        montant_agence_revente = st.number_input("Frais Agence Revente (€)", value=10000, step=500, key="e_frais_rev")
+
+    # --- 5. CALCULS DÉTAILLÉS (Moteur V8) ---
+
+    # A. Travaux
+    budget_travaux_base = surface * cout_travaux_m2
+    honoraires_conducteur = budget_travaux_base * 0.05 
+    total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
+
+    # B. Enveloppe Physique
+    enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
+
+    # C. Frais Financiers
+    frais_hypotheque = prix_offre * 0.015
+    frais_levee = 1500
+    duree_totale = duree_mois + retard_mois
+    base_portage = enveloppe_physique * 0.75
+    interets_portage = base_portage * 0.07 * (duree_totale / 12)
+    frais_dossier_banque = 1500 
+    total_cout_portage_banque = interets_portage + frais_dossier_banque
+
+    # D. Frais Structure
+    frais_sep = enveloppe_physique * 0.02
+
+    # E. Charges
+    cout_charges_copro = charges_annuelles * (duree_totale / 12)
+    cout_taxe_fonciere = taxe_fonciere * (duree_totale / 12)
+    cout_charges_totales = cout_charges_copro + cout_taxe_fonciere
+
+    # F. Total Général
+    total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
+
+    # G. Sortie & Marge
+    prix_revente_total = surface * prix_revente_m2
+    net_vendeur_reel = prix_revente_total - montant_agence_revente
+    total_plus_value = net_vendeur_reel - total_cout_operation
+    pourcentage_marge = (total_plus_value / total_cout_operation) * 100
+
+    # --- AFFICHAGE ---
+    st.markdown("---")
+    st.header("📊 Bilan Financier Expert")
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
+    c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
+    c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
+
+    st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
+
+    with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
+        st.write(f"**1. Acquisition & Travaux**")
+        st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
+        
+        st.write(f"**2. Banque & Garanties**")
+        st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
+        st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
+        st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
+        
+        st.write(f"**3. Structure & Vie**")
+        st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
+        st.write(f"- Charges & Taxe Foncière : {cout_charges_totales:,.0f} €")
+
+    if pourcentage_marge < 25:
+        st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
+    elif pourcentage_marge < 40:
+        st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
+    else:
+        st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
