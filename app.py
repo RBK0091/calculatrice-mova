@@ -2,7 +2,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB (V10)")
+st.title("🏢 Calculatrice Rentabilité MDB (V11)")
+st.success("✅ V11 : Affichage dynamique Prix m² <-> Prix Total (Revente)")
 st.markdown("---")
 
 # Création des onglets
@@ -18,7 +19,6 @@ with tab_flash:
     # 1. ACQUISITION
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        # Clés uniques (key=) pour éviter les conflits
         surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
         prix_flash = st.number_input("Prix d'achat (€)", value=200000, step=1000, key="f_prix")
     
@@ -29,7 +29,7 @@ with tab_flash:
         else:
             st.metric("Prix Achat au m²", "0 €/m²")
 
-    # 2. TRAVAUX (FLEXIBLE)
+    # 2. TRAVAUX
     st.write("---")
     st.write("🛠️ Estimation Travaux")
     mode_travaux_flash = st.radio("Mode de calcul travaux :", ["Par m² (€/m²)", "Forfait Global (€)"], horizontal=True, key="f_mode_travaux")
@@ -41,18 +41,23 @@ with tab_flash:
     else:
         total_travaux_flash = st.number_input("Montant Total Travaux (€)", value=40000, step=1000, key="f_total_travaux")
 
-    # 3. REVENTE (FLEXIBLE)
+    # 3. REVENTE (AMÉLIORATION V11 : APERÇU DIRECT)
     st.write("---")
     st.write("💰 Estimation Revente")
     
-    mode_revente_flash = st.radio("Mode de calcul revente :", ["Par m² (€/m²)", "Prix Global (€)"], horizontal=True, key="f_mode_revente")
+    mode_revente_flash = st.radio("Saisie Revente :", ["Par m² (€/m²)", "Prix Global (€)"], horizontal=True, key="f_mode_revente")
     
     if mode_revente_flash == "Par m² (€/m²)":
         prix_revente_m2_flash = st.number_input("Prix Revente Estimé au m² (€)", value=12000, step=100, key="f_revente_m2")
         prix_revente_total_flash = surf_flash * prix_revente_m2_flash
-        st.write(f"👉 Prix Revente Total : **{prix_revente_total_flash:,.0f} €**")
+        # Affichage dynamique du total
+        st.info(f"Soit un Prix Total de : **{prix_revente_total_flash:,.0f} €**")
     else:
         prix_revente_total_flash = st.number_input("Prix Revente Global Estimé (€)", value=340000, step=5000, key="f_revente_global")
+        # Affichage dynamique du m²
+        if surf_flash > 0:
+            calc_m2_flash = prix_revente_total_flash / surf_flash
+            st.info(f"Soit un prix au m² de : **{calc_m2_flash:,.0f} €/m²**")
 
     # CALCUL DE RENTABILITÉ
     include_notaire = st.checkbox("Inclure Notaire (3%) dans le coût ?", value=False, key="f_check_notaire")
@@ -83,11 +88,11 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (LE CODE COMPLET)
+# ONGLET 2 : CALCUL EXPERT (COMPLET V11)
 # ==============================================================================
 with tab_expert:
     st.header("🏢 Analyse Détaillée (Certifiée)")
-    st.success("✅ V10 : Flexibilité totale (Achat, Travaux, Revente)")
+    st.success("✅ V11 : Moteur complet avec conversions automatiques")
 
     # --- 1. ACQUISITION ---
     st.subheader("1. Acquisition")
@@ -142,7 +147,7 @@ with tab_expert:
         charges_annuelles = st.number_input("Charges Copro ANNUELLES (€)", value=1200, help="Montant total par an", key="e_charges")
         taxe_fonciere = st.number_input("Taxe Foncière ANNUELLE (€)", value=917, key="e_tf")
 
-    # --- 4. REVENTE (FLEXIBLE) ---
+    # --- 4. REVENTE (AMÉLIORATION V11) ---
     st.subheader("4. Revente")
     col7, col8 = st.columns(2)
     
@@ -153,9 +158,14 @@ with tab_expert:
         if mode_revente_expert == "Par m² (€/m²)":
             prix_revente_m2_expert = st.number_input("Prix Revente (€/m²)", value=10500, step=100, key="e_rev_m2_input")
             prix_revente_total = surface * prix_revente_m2_expert
-            st.info(f"Total Brut : {prix_revente_total:,.0f} €")
+            # Affichage dynamique Total
+            st.info(f"Soit Total : **{prix_revente_total:,.0f} €**")
         else:
             prix_revente_total = st.number_input("Prix Revente Global (€)", value=520000, step=1000, key="e_rev_global_input")
+            # Affichage dynamique m²
+            if surface > 0:
+                calc_m2_expert = prix_revente_total / surface
+                st.info(f"Soit au m² : **{calc_m2_expert:,.0f} €/m²**")
 
     with col8:
         st.write("**Frais Agence Revente**")
