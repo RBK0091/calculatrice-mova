@@ -18,6 +18,7 @@ with tab_flash:
     # 1. ACQUISITION
     col_f1, col_f2 = st.columns(2)
     with col_f1:
+        # Clés uniques (key=) pour éviter les conflits
         surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
         prix_flash = st.number_input("Prix d'achat (€)", value=200000, step=1000, key="f_prix")
     
@@ -40,11 +41,10 @@ with tab_flash:
     else:
         total_travaux_flash = st.number_input("Montant Total Travaux (€)", value=40000, step=1000, key="f_total_travaux")
 
-    # 3. REVENTE (NOUVEAU : FLEXIBLE)
+    # 3. REVENTE (FLEXIBLE)
     st.write("---")
     st.write("💰 Estimation Revente")
     
-    # Choix du mode de saisie pour la revente
     mode_revente_flash = st.radio("Mode de calcul revente :", ["Par m² (€/m²)", "Prix Global (€)"], horizontal=True, key="f_mode_revente")
     
     if mode_revente_flash == "Par m² (€/m²)":
@@ -83,7 +83,7 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (LE CODE V8 COMPLET)
+# ONGLET 2 : CALCUL EXPERT (LE CODE COMPLET)
 # ==============================================================================
 with tab_expert:
     st.header("🏢 Analyse Détaillée (Certifiée)")
@@ -142,7 +142,7 @@ with tab_expert:
         charges_annuelles = st.number_input("Charges Copro ANNUELLES (€)", value=1200, help="Montant total par an", key="e_charges")
         taxe_fonciere = st.number_input("Taxe Foncière ANNUELLE (€)", value=917, key="e_tf")
 
-    # --- 4. REVENTE (NOUVEAU FLEXIBLE) ---
+    # --- 4. REVENTE (FLEXIBLE) ---
     st.subheader("4. Revente")
     col7, col8 = st.columns(2)
     
@@ -161,7 +161,7 @@ with tab_expert:
         st.write("**Frais Agence Revente**")
         montant_agence_revente = st.number_input("Montant (€)", value=10000, step=500, key="e_frais_rev")
 
-    # --- 5. CALCULS DÉTAILLÉS (Moteur V8) ---
+    # --- 5. MOTEUR DE CALCUL EXPERT ---
 
     # A. Travaux
     budget_travaux_base = surface * cout_travaux_m2
@@ -204,4 +204,28 @@ with tab_expert:
     st.header("📊 Bilan Financier Expert")
 
     c1, c2, c3 = st.columns(3)
-    c1.
+    c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
+    c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
+    c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
+
+    st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
+
+    with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
+        st.write(f"**1. Acquisition & Travaux**")
+        st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
+        
+        st.write(f"**2. Banque & Garanties**")
+        st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
+        st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
+        st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
+        
+        st.write(f"**3. Structure & Vie**")
+        st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
+        st.write(f"- Charges & Taxe Foncière : {cout_charges_totales:,.0f} €")
+
+    if pourcentage_marge < 25:
+        st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
+    elif pourcentage_marge < 40:
+        st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
+    else:
+        st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
