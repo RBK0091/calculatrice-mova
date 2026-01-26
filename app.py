@@ -2,8 +2,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢")
 
-st.title("🏢 Calculatrice Rentabilité MDB (V11)")
-st.success("✅ V11 : Affichage dynamique Prix m² <-> Prix Total (Revente)")
+st.title("🏢 Calculatrice Rentabilité MDB (V12)")
+st.success("✅ V12 : Conversion dynamique Travaux (Total ↔ m²)")
 st.markdown("---")
 
 # Création des onglets
@@ -29,7 +29,7 @@ with tab_flash:
         else:
             st.metric("Prix Achat au m²", "0 €/m²")
 
-    # 2. TRAVAUX
+    # 2. TRAVAUX (AMÉLIORATION V12)
     st.write("---")
     st.write("🛠️ Estimation Travaux")
     mode_travaux_flash = st.radio("Mode de calcul travaux :", ["Par m² (€/m²)", "Forfait Global (€)"], horizontal=True, key="f_mode_travaux")
@@ -37,11 +37,16 @@ with tab_flash:
     if mode_travaux_flash == "Par m² (€/m²)":
         cout_m2_flash = st.number_input("Coût Travaux au m² (€)", value=2000, step=100, key="f_cout_m2")
         total_travaux_flash = surf_flash * cout_m2_flash
-        st.write(f"👉 Budget travaux : **{total_travaux_flash:,.0f} €**")
+        # Affichage dynamique Total
+        st.info(f"Soit un budget total de : **{total_travaux_flash:,.0f} €**")
     else:
         total_travaux_flash = st.number_input("Montant Total Travaux (€)", value=40000, step=1000, key="f_total_travaux")
+        # Affichage dynamique m² (NOUVEAU V12)
+        if surf_flash > 0:
+            calc_m2_travaux = total_travaux_flash / surf_flash
+            st.info(f"Soit un coût de : **{calc_m2_travaux:,.0f} €/m²**")
 
-    # 3. REVENTE (AMÉLIORATION V11 : APERÇU DIRECT)
+    # 3. REVENTE (FLEXIBLE V11)
     st.write("---")
     st.write("💰 Estimation Revente")
     
@@ -50,11 +55,9 @@ with tab_flash:
     if mode_revente_flash == "Par m² (€/m²)":
         prix_revente_m2_flash = st.number_input("Prix Revente Estimé au m² (€)", value=12000, step=100, key="f_revente_m2")
         prix_revente_total_flash = surf_flash * prix_revente_m2_flash
-        # Affichage dynamique du total
         st.info(f"Soit un Prix Total de : **{prix_revente_total_flash:,.0f} €**")
     else:
         prix_revente_total_flash = st.number_input("Prix Revente Global Estimé (€)", value=340000, step=5000, key="f_revente_global")
-        # Affichage dynamique du m²
         if surf_flash > 0:
             calc_m2_flash = prix_revente_total_flash / surf_flash
             st.info(f"Soit un prix au m² de : **{calc_m2_flash:,.0f} €/m²**")
@@ -88,11 +91,11 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (COMPLET V11)
+# ONGLET 2 : CALCUL EXPERT (COMPLET)
 # ==============================================================================
 with tab_expert:
     st.header("🏢 Analyse Détaillée (Certifiée)")
-    st.success("✅ V11 : Moteur complet avec conversions automatiques")
+    st.success("✅ V12 : Moteur complet avec conversions automatiques")
 
     # --- 1. ACQUISITION ---
     st.subheader("1. Acquisition")
@@ -147,7 +150,7 @@ with tab_expert:
         charges_annuelles = st.number_input("Charges Copro ANNUELLES (€)", value=1200, help="Montant total par an", key="e_charges")
         taxe_fonciere = st.number_input("Taxe Foncière ANNUELLE (€)", value=917, key="e_tf")
 
-    # --- 4. REVENTE (AMÉLIORATION V11) ---
+    # --- 4. REVENTE ---
     st.subheader("4. Revente")
     col7, col8 = st.columns(2)
     
@@ -158,11 +161,9 @@ with tab_expert:
         if mode_revente_expert == "Par m² (€/m²)":
             prix_revente_m2_expert = st.number_input("Prix Revente (€/m²)", value=10500, step=100, key="e_rev_m2_input")
             prix_revente_total = surface * prix_revente_m2_expert
-            # Affichage dynamique Total
             st.info(f"Soit Total : **{prix_revente_total:,.0f} €**")
         else:
             prix_revente_total = st.number_input("Prix Revente Global (€)", value=520000, step=1000, key="e_rev_global_input")
-            # Affichage dynamique m²
             if surface > 0:
                 calc_m2_expert = prix_revente_total / surface
                 st.info(f"Soit au m² : **{calc_m2_expert:,.0f} €/m²**")
@@ -187,55 +188,3 @@ with tab_expert:
     duree_totale = duree_mois + retard_mois
     base_portage = enveloppe_physique * 0.75
     interets_portage = base_portage * 0.07 * (duree_totale / 12)
-    frais_dossier_banque = 1500 
-    total_cout_portage_banque = interets_portage + frais_dossier_banque
-
-    # D. Frais Structure
-    frais_sep = enveloppe_physique * 0.02
-
-    # E. Charges
-    cout_charges_copro = charges_annuelles * (duree_totale / 12)
-    cout_taxe_fonciere = taxe_fonciere * (duree_totale / 12)
-    cout_charges_totales = cout_charges_copro + cout_taxe_fonciere
-
-    # F. Total Général
-    total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
-
-    # G. Sortie & Marge
-    net_vendeur_reel = prix_revente_total - montant_agence_revente
-    total_plus_value = net_vendeur_reel - total_cout_operation
-    if total_cout_operation > 0:
-        pourcentage_marge = (total_plus_value / total_cout_operation) * 100
-    else:
-        pourcentage_marge = 0
-
-    # --- AFFICHAGE ---
-    st.markdown("---")
-    st.header("📊 Bilan Financier Expert")
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Prix de revente (Brut)", f"{prix_revente_total:,.0f} €")
-    c2.metric("Total Coût Opération", f"{total_cout_operation:,.0f} €")
-    c3.metric("Total Plus Value", f"{total_plus_value:,.0f} €", delta_color="normal")
-
-    st.markdown(f"### 📈 Rentabilité : **{pourcentage_marge:.2f} %**")
-
-    with st.expander("🔎 Voir le détail des Coûts (Vérification)"):
-        st.write(f"**1. Acquisition & Travaux**")
-        st.write(f"- Enveloppe Physique (Achat + Notaire 3% + Travaux) : {enveloppe_physique:,.0f} €")
-        
-        st.write(f"**2. Banque & Garanties**")
-        st.write(f"- Portage & Dossier (7% + 1500€) : {total_cout_portage_banque:,.0f} €")
-        st.write(f"- Hypothèque (1,5%) : {frais_hypotheque:,.0f} €")
-        st.write(f"- Levée Hypothèque : {frais_levee:,.0f} €")
-        
-        st.write(f"**3. Structure & Vie**")
-        st.write(f"- Frais SEP (2%) : {frais_sep:,.0f} €")
-        st.write(f"- Charges & Taxe Foncière : {cout_charges_totales:,.0f} €")
-
-    if pourcentage_marge < 25:
-        st.error(f"🛑 Marge {pourcentage_marge:.1f}% : Insuffisant")
-    elif pourcentage_marge < 40:
-        st.warning(f"⚠️ Marge {pourcentage_marge:.1f}% : Standard Partenaire")
-    else:
-        st.success(f"✅ Marge {pourcentage_marge:.1f}% : Cible Club MOVA")
