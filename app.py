@@ -3,88 +3,91 @@ import streamlit as st
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢", layout="centered")
 
 # ==============================================================================
-# CSS SPÉCIAL IPHONE & MOBILE
+# CSS PRO & MOBILE FIRST
 # ==============================================================================
 st.markdown("""
 <style>
-/* 1. Style des boutons radios (plus gros pour le doigt) */
-div.row-widget.stRadio > div {flex-direction: row; justify-content: center;}
-div.row-widget.stRadio > div > label {
-    background-color: #f0f2f6; padding: 12px 10px; border-radius: 8px; margin: 0 4px; 
-    cursor: pointer; border: 1px solid #d1d5db; font-size: 0.9rem; flex-grow: 1; text-align: center;
-}
-div.row-widget.stRadio > div > label[data-baseweb="radio"] {background-color: #ff4b4b; color: white;}
-
-/* 2. FORCE L'AFFICHAGE CÔTE À CÔTE DES RÉSULTATS (Coût/Marge) */
-@media (max-width: 640px) {
-    div[data-testid="column"] {
-        width: 50% !important;
-        flex: 0 0 50% !important;
-        min-width: 50% !important;
-    }
-}
-
-/* 3. BARRE DE RENTABILITÉ FIXE EN BAS (STICKY FOOTER) */
+/* 1. STICKY FOOTER (Barre Rentabilité) */
 .fixed-footer {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: #ffffff;
-    border-top: 1px solid #e5e5e5;
-    text-align: center;
-    padding: 15px 0;
-    z-index: 999;
-    box-shadow: 0px -2px 10px rgba(0,0,0,0.1);
-    font-family: sans-serif;
+    position: fixed; left: 0; bottom: 0; width: 100%;
+    background-color: #ffffff; border-top: 1px solid #e0e0e0;
+    text-align: center; padding: 12px 0; z-index: 9999;
+    box-shadow: 0px -4px 15px rgba(0,0,0,0.08); font-family: sans-serif;
 }
-.footer-text { font-size: 1rem; color: #333; margin-bottom: 5px; font-weight: bold; }
-.footer-value { font-size: 1.5rem; font-weight: 900; }
-.safe-zone { height: 100px; } /* Espace vide pour ne pas cacher le bas de page */
+.footer-label { font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.footer-value { font-size: 1.5rem; font-weight: 800; }
+.safe-zone { height: 100px; }
+
+/* 2. STYLE DES BOUTONS RADIOS (Minimaliste & Pro) */
+div.row-widget.stRadio > div {flex-direction: row; justify-content: flex-start; gap: 10px;}
+div.row-widget.stRadio > div > label {
+    background-color: transparent; border: 1px solid #ddd; padding: 6px 12px;
+    border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.2s;
+}
+div.row-widget.stRadio > div > label[data-baseweb="radio"] {
+    background-color: #2e2e2e; color: white; border-color: #2e2e2e; /* Noir/Gris foncé élégant */
+}
+
+/* 3. OPTIMISATION MOBILE (Force 2 colonnes pour Metrics) */
+@media (max-width: 640px) {
+    div[data-testid="column"] { width: 50% !important; flex: 0 0 50% !important; min-width: 50% !important; }
+}
+
+/* 4. NETTOYAGE ESPACES */
+.block-container { padding-top: 2rem; padding-bottom: 5rem; }
+hr { margin: 1em 0; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🏢 Calculatrice MDB (V24)")
+st.title("🏢 Calculatrice MDB")
 
 # Création des onglets
-tab_flash, tab_expert = st.tabs(["⚡ FLASH (Mobile)", "🏢 EXPERT (Détaillé)"])
+tab_flash, tab_expert = st.tabs(["⚡ FLASH", "🏢 EXPERT"])
 
 # ==============================================================================
-# ONGLET 1 : CALCUL FLASH (ACCORDÉONS + STICKY BAR)
+# ONGLET 1 : FLASH (DESIGN UNIFIÉ)
 # ==============================================================================
 with tab_flash:
-    # --- 1. ACQUISITION (Accordéon Ouvert par défaut) ---
+    
+    # --- 1. ACQUISITION ---
     with st.expander("1️⃣ ACQUISITION", expanded=True):
         c1, c2 = st.columns(2)
         with c1:
             surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
         with c2:
-            prix_flash = st.number_input("Prix Achat (€)", value=200000, step=1000, key="f_prix")
+            prix_flash = st.number_input("Prix Net (€)", value=200000, step=1000, key="f_prix")
         
+        # RÉSULTAT STANDARDISÉ (Metric)
+        st.markdown("---")
         if surf_flash > 0:
-            st.caption(f"📍 Prix Actuel : **{prix_flash/surf_flash:,.0f} €/m²**")
+            st.metric("Prix Actuel / m²", f"{prix_flash/surf_flash:,.0f} €/m²")
+        else:
+            st.metric("Prix Actuel / m²", "0 €/m²")
 
-    # --- 2. TRAVAUX (Accordéon Fermé par défaut pour gagner place) ---
+    # --- 2. TRAVAUX ---
     with st.expander("2️⃣ TRAVAUX", expanded=False):
+        # Choix discret
         mode_travaux_flash = st.radio("Mode :", ["€/m²", "Forfait €"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
         
         c3, c4 = st.columns(2)
         if mode_travaux_flash == "€/m²":
             with c3:
                 cout_m2_flash = st.number_input("Coût/m² (€)", value=2000, step=100, key="f_cout_m2")
-            with c4:
                 total_travaux_flash = surf_flash * cout_m2_flash
-                st.metric("Budget", f"{total_travaux_flash/1000:.1f} k€")
+            with c4:
+                # Metric Resultat
+                st.metric("Budget Travaux", f"{total_travaux_flash/1000:.1f} k€")
         else:
             with c3:
                 total_travaux_flash = st.number_input("Total (€)", value=40000, step=1000, key="f_total_travaux")
             with c4:
+                # Metric Resultat
                 if surf_flash > 0:
-                    st.metric("Soit/m²", f"{total_travaux_flash/surf_flash:,.0f} €")
+                    st.metric("Soit au m²", f"{total_travaux_flash/surf_flash:,.0f} €")
                 else:
-                    st.metric("Soit/m²", "0 €")
+                    st.metric("Soit au m²", "0 €")
 
-    # --- 3. REVENTE (Accordéon Fermé par défaut) ---
+    # --- 3. REVENTE ---
     with st.expander("3️⃣ REVENTE", expanded=False):
         mode_revente_flash = st.radio("Mode :", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
         
@@ -92,15 +95,17 @@ with tab_flash:
         if mode_revente_flash == "€/m²":
             with c5:
                 prix_revente_m2_flash = st.number_input("Vente/m² (€)", value=12000, step=100, key="f_revente_m2")
-            with c6:
                 prix_revente_total_flash = surf_flash * prix_revente_m2_flash
-                st.metric("Total", f"{prix_revente_total_flash/1000:.0f} k€")
+            with c6:
+                st.metric("Total Revente", f"{prix_revente_total_flash/1000:.0f} k€")
         else:
             with c5:
                 prix_revente_total_flash = st.number_input("Prix Global (€)", value=340000, step=5000, key="f_revente_global")
             with c6:
                 if surf_flash > 0:
-                    st.metric("Soit/m²", f"{prix_revente_total_flash/surf_flash:,.0f} €")
+                    st.metric("Soit au m²", f"{prix_revente_total_flash/surf_flash:,.0f} €")
+                else:
+                    st.metric("Soit au m²", "0 €")
 
     # --- CALCULS ---
     include_notaire = st.checkbox("Inclure Notaire (3%)", value=False, key="f_check_notaire")
@@ -115,28 +120,28 @@ with tab_flash:
     else:
         renta_flash = 0
 
-    # --- RÉSULTATS DÉTAILLÉS (Reste en haut du footer) ---
-    st.markdown("---")
+    # --- SYNTHÈSE (Avant le footer) ---
+    st.markdown("### 📊 Synthèse")
     kpi_col1, kpi_col2 = st.columns(2)
     with kpi_col1:
-        st.metric("📉 Coût Total", f"{cout_total_flash/1000:.0f} k€")
+        st.metric("Coût Total", f"{cout_total_flash/1000:.0f} k€")
     with kpi_col2:
-        st.metric("💰 Marge Brute", f"{marge_flash/1000:.0f} k€")
+        st.metric("Marge Brute", f"{marge_flash/1000:.0f} k€", delta_color="normal")
 
-    # Espace vide pour que le footer ne cache pas les résultats
+    # Zone de sécurité
     st.markdown('<div class="safe-zone"></div>', unsafe_allow_html=True)
 
-    # --- LE STICKY FOOTER (BARRE FIXE EN BAS) ---
-    # Couleur dynamique selon la rentabilité
-    color_renta = "#d9534f" # Rouge
-    if renta_flash >= 25: color_renta = "#f0ad4e" # Orange
-    if renta_flash >= 40: color_renta = "#5cb85c" # Vert
+    # --- STICKY FOOTER ---
+    # Code couleur sobre et pro
+    color_renta = "#d32f2f" # Rouge sombre
+    if renta_flash >= 25: color_renta = "#f57c00" # Orange
+    if renta_flash >= 40: color_renta = "#388e3c" # Vert fort
 
     html_footer = f"""
     <div class="fixed-footer">
-        <div class="footer-text">Rentabilité Projet</div>
+        <div class="footer-label">RENTABILITÉ BRUTE</div>
         <div class="footer-value" style="color: {color_renta};">
-            {renta_flash:.2f} %
+            {renta_flash:.1f} %
         </div>
     </div>
     """
@@ -144,10 +149,10 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (BASE V15 CONSERVÉE)
+# ONGLET 2 : EXPERT (Standard V15)
 # ==============================================================================
 with tab_expert:
-    st.caption("✅ Moteur certifié V14 (Notaire 3% | Portage 7% + Dossier 1500€)")
+    st.caption("✅ Moteur Expert (Détail Complet)")
 
     # 1. ACQUISITION
     with st.container():
@@ -160,8 +165,8 @@ with tab_expert:
                 st.caption(f"📍 {prix_offre/surface:,.0f} €/m²")
         
         with ec2:
-            st.write("Frais d'agence (Achat)")
-            mode_agence = st.radio("Saisie Agence", ["%", "Fixe (€)"], horizontal=True, label_visibility="collapsed", key="e_mode_agence")
+            st.write("Frais d'agence")
+            mode_agence = st.radio("Mode", ["%", "Fixe (€)"], horizontal=True, label_visibility="collapsed", key="e_mode_agence")
             
             if mode_agence == "%":
                 taux_agence = st.number_input("Taux (%)", value=0.0, step=0.5, key="e_taux_agence")
@@ -170,7 +175,7 @@ with tab_expert:
                 frais_agence_acq = st.number_input("Montant (€)", value=0, step=500, key="e_montant_agence")
             
             frais_notaire = prix_offre * 0.03
-            st.info(f"👮‍♂️ Notaire (3%): **{frais_notaire:,.0f} €**")
+            st.metric("Notaire (3%)", f"{frais_notaire:,.0f} €")
 
     st.markdown("---")
 
@@ -195,7 +200,7 @@ with tab_expert:
         with pc3:
             age_frais = st.number_input("Frais AGE", value=2000, key="e_age")
         
-        autres_frais_travaux = st.number_input("Autres (Permis...)", value=0, key="e_autres")
+        autres_frais_travaux = st.number_input("Autres", value=0, key="e_autres")
 
     st.markdown("---")
 
@@ -204,11 +209,11 @@ with tab_expert:
         st.subheader("3. Temps & Charges")
         sc1, sc2 = st.columns(2)
         with sc1:
-            duree_mois = st.slider("Durée (3-18 mois)", 3, 18, 10, key="e_duree")
-            retard_mois = st.slider("Retard Prévu", 0, 12, 0, key="e_retard")
+            duree_mois = st.slider("Durée (mois)", 3, 18, 10, key="e_duree")
+            retard_mois = st.slider("Retard", 0, 12, 0, key="e_retard")
         with sc2:
-            charges_annuelles = st.number_input("Charges/An (€)", value=1200, key="e_charges")
-            taxe_fonciere = st.number_input("Taxe Fonc./An (€)", value=917, key="e_tf")
+            charges_annuelles = st.number_input("Charges/An", value=1200, key="e_charges")
+            taxe_fonciere = st.number_input("Taxe Fonc./An", value=917, key="e_tf")
 
     st.markdown("---")
 
@@ -217,11 +222,10 @@ with tab_expert:
         st.subheader("4. Revente")
         rc1, rc2 = st.columns(2)
         
-        # Initialisation variable
         prix_revente_total = 0
         
         with rc1:
-            mode_revente_expert = st.radio("Mode Revente", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="e_mode_revente")
+            mode_revente_expert = st.radio("Mode", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="e_mode_revente")
             if mode_revente_expert == "€/m²":
                 prix_revente_m2_expert = st.number_input("Prix/m² (€)", value=10500, step=100, key="e_rev_m2_input")
                 prix_revente_total = surface * prix_revente_m2_expert
@@ -229,13 +233,10 @@ with tab_expert:
                 prix_revente_total = st.number_input("Prix Global (€)", value=520000, step=1000, key="e_rev_global_input")
         
         with rc2:
-            montant_agence_revente = st.number_input("Frais Agence Vente (€)", value=10000, step=500, key="e_frais_rev")
-            if mode_revente_expert == "€/m²":
-                st.info(f"Total: **{prix_revente_total:,.0f} €**")
-            elif surface > 0:
-                st.info(f"Soit: **{prix_revente_total/surface:,.0f} €/m²**")
+            montant_agence_revente = st.number_input("Frais Agence", value=10000, step=500, key="e_frais_rev")
+            st.metric("Total Revente", f"{prix_revente_total:,.0f} €")
 
-    # --- CALCULS EXPERT ---
+    # --- CALCULS ---
     budget_travaux_base = surface * cout_travaux_m2
     honoraires_conducteur = budget_travaux_base * 0.05 
     total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
@@ -260,7 +261,7 @@ with tab_expert:
     else:
         pourcentage_marge = 0
 
-    # --- RÉSULTATS VISUELS EXPERT ---
+    # --- RÉSULTATS VISUELS ---
     st.markdown("---")
     st.header("📊 Résultats")
     
@@ -282,7 +283,7 @@ with tab_expert:
 
     # --- RÉCAPITULATIF ---
     st.markdown("---")
-    with st.expander("🔎 DÉTAIL COMPLET (Cliquer pour ouvrir)"):
+    with st.expander("🔎 DÉTAIL COMPLET"):
         st.write("### 1. Acquisition & Travaux")
         st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
         st.caption(f"Dont Notaire : {frais_notaire:,.0f} € | Dont Travaux (+5% cond.) : {total_travaux:,.0f} €")
