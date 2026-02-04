@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="Calculatrice MDB", page_icon="🏢", layout="centered")
 
 # ==============================================================================
-# CSS AGRESSIF (FORCE L'AFFICHAGE CÔTE À CÔTE SUR MOBILE)
+# CSS AGRESSIF (FORCE L'AFFICHAGE CÔTE À CÔTE + STYLE BLEU)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -17,15 +17,32 @@ st.markdown("""
     .footer-label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
     .footer-value { font-size: 1.6rem; font-weight: 800; }
     
-    /* 2. FORCER LES COLONNES CÔTE À CÔTE SUR MOBILE (OVERRIDE STREAMLIT) */
+    /* 2. FORCER LES COLONNES CÔTE À CÔTE SUR MOBILE (CRUCIAL) */
     [data-testid="column"] {
         width: 50% !important;
         flex: 0 0 50% !important;
         min-width: 50% !important;
-        padding: 0 5px !important; /* Réduire les marges pour que ça rentre */
+        padding: 0 4px !important;
     }
     
-    /* 3. DESIGN DES BOUTONS RADIOS */
+    /* 3. DESIGN DES RÉSULTATS (LE "BLEU" UNIFIÉ) */
+    .result-box {
+        background-color: #f0f7ff; /* Fond bleu très léger */
+        border: 1px solid #cce5ff;
+        border-radius: 8px;
+        padding: 10px 5px;
+        text-align: center;
+        height: 74px; /* Hauteur forcée pour s'aligner avec les inputs */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2px; /* Ajustement alignement vertical */
+    }
+    .result-label { font-size: 0.7rem; color: #555; text-transform: uppercase; margin-bottom: 2px;}
+    .result-value { font-size: 1.1rem; font-weight: 800; color: #0068c9; }
+
+    /* 4. DESIGN DES BOUTONS RADIOS */
     div.row-widget.stRadio > div {flex-direction: row; justify-content: center; gap: 5px;}
     div.row-widget.stRadio > div > label {
         background-color: transparent; border: 1px solid #ddd; padding: 8px 5px;
@@ -35,7 +52,7 @@ st.markdown("""
         background-color: #2e2e2e; color: white; border-color: #2e2e2e;
     }
 
-    /* 4. DESIGN CUSTOM POUR LA SYNTHÈSE (HTML) */
+    /* 5. DESIGN CUSTOM POUR LA SYNTHÈSE (HTML) */
     .kpi-container {
         display: flex; flex-direction: row; justify-content: space-between;
         background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee;
@@ -45,14 +62,24 @@ st.markdown("""
     .kpi-label { font-size: 0.8rem; color: #666; margin-bottom: 5px; }
     .kpi-value { font-size: 1.2rem; font-weight: 700; color: #000; }
     
-    /* Ajustements généraux */
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
-    .stNumberInput label { font-size: 0.85rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FONCTION POUR AFFICHER LES RÉSULTATS GARANTIS CÔTE À CÔTE ---
+# --- FONCTIONS D'AFFICHAGE CUSTOM ---
+
+def display_blue_result(label, value):
+    """Affiche le résultat en bleu dans une boite alignée avec l'input d'à côté"""
+    html = f"""
+    <div class="result-box">
+        <div class="result-label">{label}</div>
+        <div class="result-value">{value}</div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
 def display_custom_kpi(label1, value1, label2, value2):
+    """Affiche la synthèse en bas"""
     html = f"""
     <div class="kpi-container">
         <div class="kpi-box">
@@ -74,7 +101,7 @@ st.title("🏢 Calculatrice MDB")
 tab_flash, tab_expert = st.tabs(["⚡ FLASH", "🏢 EXPERT"])
 
 # ==============================================================================
-# ONGLET 1 : FLASH (DESIGN MOBILE FORCÉ)
+# ONGLET 1 : FLASH (DESIGN MOBILE V28)
 # ==============================================================================
 with tab_flash:
     
@@ -84,11 +111,12 @@ with tab_flash:
         with c1:
             surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
         with c2:
-            prix_flash = st.number_input("Prix (€)", value=200000, step=1000, key="f_prix")
+            prix_flash = st.number_input("Prix Net (€)", value=200000, step=1000, key="f_prix")
         
-        # Résultat visuel immédiat (HTML custom pour être sûr)
+        # Le prix au m² en bleu (CHARTE UNIFIÉE)
+        st.markdown("---")
         if surf_flash > 0:
-            st.markdown(f"<div style='text-align:center; font-weight:bold; color:#0068c9; margin-top:5px; font-size:0.9rem;'>📍 {prix_flash/surf_flash:,.0f} €/m²</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align:center; color:#0068c9; font-weight:bold; font-size:1.1rem;'>📍 {prix_flash/surf_flash:,.0f} €/m²</div>", unsafe_allow_html=True)
 
     # --- 2. TRAVAUX ---
     with st.expander("2️⃣ TRAVAUX", expanded=False):
@@ -100,16 +128,16 @@ with tab_flash:
                 cout_m2_flash = st.number_input("Coût/m²", value=2000, step=100, key="f_cout_m2")
                 total_travaux_flash = surf_flash * cout_m2_flash
             with c4:
-                # On utilise un input désactivé pour afficher le résultat "comme" un input, aligné
-                st.text_input("Budget", value=f"{total_travaux_flash/1000:.1f} k€", disabled=True, key="res_tx_1")
+                # ICI : Remplacement de la case grise par le style BLEU
+                display_blue_result("BUDGET TOTAL", f"{total_travaux_flash/1000:.1f} k€")
         else:
             with c3:
                 total_travaux_flash = st.number_input("Total (€)", value=40000, step=1000, key="f_total_travaux")
             with c4:
-                 if surf_flash > 0:
-                    st.text_input("Soit/m²", value=f"{total_travaux_flash/surf_flash:,.0f} €", disabled=True, key="res_tx_2")
-                 else:
-                    st.text_input("Soit/m²", value="0 €", disabled=True)
+                if surf_flash > 0:
+                    display_blue_result("SOIT AU M²", f"{total_travaux_flash/surf_flash:,.0f} €")
+                else:
+                    display_blue_result("SOIT AU M²", "0 €")
 
     # --- 3. REVENTE ---
     with st.expander("3️⃣ REVENTE", expanded=False):
@@ -121,15 +149,16 @@ with tab_flash:
                 prix_revente_m2_flash = st.number_input("Vente/m²", value=12000, step=100, key="f_revente_m2")
                 prix_revente_total_flash = surf_flash * prix_revente_m2_flash
             with c6:
-                st.text_input("C.A.", value=f"{prix_revente_total_flash/1000:.0f} k€", disabled=True, key="res_rev_1")
+                # ICI : Remplacement de la case grise par le style BLEU
+                display_blue_result("CHIFFRE D'AFFAIRES", f"{prix_revente_total_flash/1000:.0f} k€")
         else:
             with c5:
                 prix_revente_total_flash = st.number_input("Prix Global", value=340000, step=5000, key="f_revente_global")
             with c6:
                 if surf_flash > 0:
-                    st.text_input("Soit/m²", value=f"{prix_revente_total_flash/surf_flash:,.0f} €", disabled=True, key="res_rev_2")
+                    display_blue_result("SOIT AU M²", f"{prix_revente_total_flash/surf_flash:,.0f} €")
                 else:
-                    st.text_input("Soit/m²", value="0 €", disabled=True)
+                    display_blue_result("SOIT AU M²", "0 €")
 
     # --- CALCULS ---
     include_notaire = st.checkbox("Inclure Notaire (3%)", value=False, key="f_check_notaire")
@@ -144,10 +173,8 @@ with tab_flash:
     else:
         renta_flash = 0
 
-    # --- SYNTHÈSE (FORCÉE EN HTML/CSS) ---
+    # --- SYNTHÈSE (FORCÉE EN HTML/CSS 2 COLONNES) ---
     st.markdown("### 📊 Synthèse")
-    
-    # C'est ici que je force l'affichage côte à côte avec ma fonction personnalisée
     display_custom_kpi(
         "COÛT TOTAL", f"{cout_total_flash/1000:.0f} k€",
         "MARGE BRUTE", f"{marge_flash/1000:.0f} k€"
@@ -176,8 +203,6 @@ with tab_flash:
 # ONGLET 2 : EXPERT (CODE SÉCURISÉ)
 # ==============================================================================
 with tab_expert:
-    # Initialisation de toutes les variables pour éviter le "NameError"
-    # Cela garantit que le calcul final ne plante jamais
     surface = 0.0
     prix_offre = 0.0
     prix_revente_total = 0.0
