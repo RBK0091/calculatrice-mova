@@ -325,3 +325,26 @@ with tab_expert:
 
     st.markdown(f"### 🎯 Rentabilité : {pourcentage_marge:.2f} %")
     if pourcentage_marge < 25:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.error("Trop faible (<25%)")
+    elif pourcentage_marge < 40:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.warning("Bon (Partenaire)")
+    else:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.success("Excellent (Club MOVA)")
+
+    # --- RÉCAPITULATIF ---
+    st.markdown("---")
+    with st.expander("🔎 DÉTAIL COMPLET"):
+        st.write("### 1. Acquisition & Travaux")
+        st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
+        st.caption(f"Dont Notaire : {frais_notaire:,.0f} € | Dont Travaux (+5% cond.) : {total_travaux:,.0f} €")
+        
+        st.write("### 2. Banque & Garanties")
+        st.write(f"- Portage (7%) + Dossier (1500€) : **{total_cout_portage_banque:,.0f} €**")
+        st.write(f"- Hypothèque (1,5%) + Levée (1500€) : **{frais_hypotheque + frais_levee:,.0f} €**")
+        
+        st.write("### 3. Structure & Vie")
+        st.write(f"- Frais SEP (2%) : **{frais_sep:,.0f} €**")
+        st.write(f"- Charges & TF : **{cout_charges_totales:,.0f} €**")
