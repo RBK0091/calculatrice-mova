@@ -101,7 +101,7 @@ st.title("🏢 Calculatrice MDB")
 tab_flash, tab_expert = st.tabs(["⚡ FLASH", "🏢 EXPERT"])
 
 # ==============================================================================
-# ONGLET 1 : FLASH (DESIGN MOBILE V29)
+# ONGLET 1 : FLASH (DESIGN MOBILE V30)
 # ==============================================================================
 with tab_flash:
     
@@ -113,13 +113,12 @@ with tab_flash:
         with c2:
             prix_flash = st.number_input("Prix Net (€)", value=200000, step=1000, key="f_prix")
         
-        # Le prix au m² en bleu (CHARTE UNIFIÉE AVEC LES AUTRES VOLETS)
+        # Le prix au m² en bleu
         if surf_flash > 0:
             display_blue_result("PRIX ACTUEL", f"{prix_flash/surf_flash:,.0f} €/m²")
 
     # --- 2. TRAVAUX ---
     with st.expander("2️⃣ TRAVAUX", expanded=False):
-        # Renommage "Global" -> "Montant"
         mode_travaux_flash = st.radio("Mode :", ["€/m²", "Montant"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
         
         c3, c4 = st.columns(2)
@@ -140,7 +139,6 @@ with tab_flash:
 
     # --- 3. REVENTE ---
     with st.expander("3️⃣ REVENTE", expanded=False):
-        # Renommage "Global" -> "Montant"
         mode_revente_flash = st.radio("Mode :", ["€/m²", "Montant"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
         
         c5, c6 = st.columns(2)
@@ -149,10 +147,10 @@ with tab_flash:
                 prix_revente_m2_flash = st.number_input("Vente/m²", value=12000, step=100, key="f_revente_m2")
                 prix_revente_total_flash = surf_flash * prix_revente_m2_flash
             with c6:
-                display_blue_result("CHIFFRE D'AFFAIRES", f"{prix_revente_total_flash/1000:.0f} k€")
+                # MODIFICATION V30 : "CHIFFRE D'AFFAIRES" -> "PRIX DE SORTIE"
+                display_blue_result("PRIX DE SORTIE", f"{prix_revente_total_flash/1000:.0f} k€")
         else:
             with c5:
-                # Renommage "Prix Global" -> "Prix de sortie"
                 prix_revente_total_flash = st.number_input("Prix de sortie", value=340000, step=5000, key="f_revente_global")
             with c6:
                 if surf_flash > 0:
@@ -173,9 +171,8 @@ with tab_flash:
     else:
         renta_flash = 0
 
-    # --- SYNTHÈSE (FORCÉE EN HTML/CSS 2 COLONNES) ---
+    # --- SYNTHÈSE ---
     st.markdown("### 📊 Synthèse")
-    # Renommage des libellés
     display_custom_kpi(
         "COÛT DE L'OPÉRATION", f"{cout_total_flash/1000:.0f} k€",
         "MARGE", f"{marge_flash/1000:.0f} k€"
@@ -320,7 +317,6 @@ with tab_expert:
     st.markdown("---")
     st.header("📊 Résultats")
     
-    # Ici aussi, on utilise la fonction custom pour assurer l'affichage mobile
     display_custom_kpi(
         "PRIX REVENTE", f"{prix_revente_total:,.0f} €",
         "COÛT TOTAL", f"{total_cout_operation:,.0f} €"
@@ -329,26 +325,3 @@ with tab_expert:
 
     st.markdown(f"### 🎯 Rentabilité : {pourcentage_marge:.2f} %")
     if pourcentage_marge < 25:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.error("Trop faible (<25%)")
-    elif pourcentage_marge < 40:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.warning("Bon (Partenaire)")
-    else:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.success("Excellent (Club MOVA)")
-
-    # --- RÉCAPITULATIF ---
-    st.markdown("---")
-    with st.expander("🔎 DÉTAIL COMPLET"):
-        st.write("### 1. Acquisition & Travaux")
-        st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
-        st.caption(f"Dont Notaire : {frais_notaire:,.0f} € | Dont Travaux (+5% cond.) : {total_travaux:,.0f} €")
-        
-        st.write("### 2. Banque & Garanties")
-        st.write(f"- Portage (7%) + Dossier (1500€) : **{total_cout_portage_banque:,.0f} €**")
-        st.write(f"- Hypothèque (1,5%) + Levée (1500€) : **{frais_hypotheque + frais_levee:,.0f} €**")
-        
-        st.write("### 3. Structure & Vie")
-        st.write(f"- Frais SEP (2%) : **{frais_sep:,.0f} €**")
-        st.write(f"- Charges & TF : **{cout_charges_totales:,.0f} €**")
