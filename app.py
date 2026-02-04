@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢", layout="centered")
 
-# CSS pour améliorer l'esthétique (Boutons radios & accordéons)
+# CSS pour le style (Boutons radios & accordéons)
 st.markdown("""
 <style>
 div.row-widget.stRadio > div {flex-direction: row; justify-content: center;}
@@ -14,77 +14,77 @@ div.row-widget.stRadio > div > label[data-baseweb="radio"] {background-color: #f
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🏢 Calculatrice MDB (V19)")
+st.title("🏢 Calculatrice MDB (V20)")
 
-# --- INITIALISATION DE LA MÉMOIRE (SESSION STATE) ---
-# C'est ce qui permet de lier la réglette et la case chiffre
-if 'shared_surf' not in st.session_state: st.session_state.shared_surf = 46.0
-if 'shared_prix' not in st.session_state: st.session_state.shared_prix = 240000.0
-if 'shared_cout_m2' not in st.session_state: st.session_state.shared_cout_m2 = 1500.0
-if 'shared_env_tx' not in st.session_state: st.session_state.shared_env_tx = 40000.0
-if 'shared_rev_m2' not in st.session_state: st.session_state.shared_rev_m2 = 10500.0
-if 'shared_rev_global' not in st.session_state: st.session_state.shared_rev_global = 340000.0
+# --- 1. INITIALISATION DES VALEURS (Si elles n'existent pas) ---
+if 'surf' not in st.session_state: st.session_state.surf = 46.0
+if 'prix' not in st.session_state: st.session_state.prix = 240000.0
+if 'cout_m2' not in st.session_state: st.session_state.cout_m2 = 1500.0
+if 'env_tx' not in st.session_state: st.session_state.env_tx = 40000.0
+if 'rev_m2' not in st.session_state: st.session_state.rev_m2 = 10500.0
+if 'rev_glob' not in st.session_state: st.session_state.rev_glob = 340000.0
 
-# --- FONCTIONS DE SYNCHRONISATION ---
-def sync_surf_input(): st.session_state.shared_surf = st.session_state.w_surf_input
-def sync_surf_slider(): st.session_state.shared_surf = st.session_state.w_surf_slider
+# --- 2. FONCTIONS DE SYNCHRONISATION (CALLBACKS) ---
+# C'est ici que la magie opère : Quand on touche l'un, on met à jour l'autre.
 
-def sync_prix_input(): st.session_state.shared_prix = st.session_state.w_prix_input
-def sync_prix_slider(): st.session_state.shared_prix = st.session_state.w_prix_slider
+def update_surf_from_slider(): st.session_state.surf = st.session_state.slider_surf
+def update_surf_from_input(): st.session_state.surf = st.session_state.input_surf
 
-def sync_cout_input(): st.session_state.shared_cout_m2 = st.session_state.w_cout_input
-def sync_cout_slider(): st.session_state.shared_cout_m2 = st.session_state.w_cout_slider
+def update_prix_from_slider(): st.session_state.prix = st.session_state.slider_prix
+def update_prix_from_input(): st.session_state.prix = st.session_state.input_prix
 
-def sync_env_input(): st.session_state.shared_env_tx = st.session_state.w_env_input
-def sync_env_slider(): st.session_state.shared_env_tx = st.session_state.w_env_slider
+def update_cout_from_slider(): st.session_state.cout_m2 = st.session_state.slider_cout
+def update_cout_from_input(): st.session_state.cout_m2 = st.session_state.input_cout
 
-def sync_rev_m2_input(): st.session_state.shared_rev_m2 = st.session_state.w_rev_m2_input
-def sync_rev_m2_slider(): st.session_state.shared_rev_m2 = st.session_state.w_rev_m2_slider
+def update_env_from_slider(): st.session_state.env_tx = st.session_state.slider_env
+def update_env_from_input(): st.session_state.env_tx = st.session_state.input_env
 
-def sync_rev_glob_input(): st.session_state.shared_rev_global = st.session_state.w_rev_glob_input
-def sync_rev_glob_slider(): st.session_state.shared_rev_global = st.session_state.w_rev_glob_slider
+def update_rev_m2_from_slider(): st.session_state.rev_m2 = st.session_state.slider_rev_m2
+def update_rev_m2_from_input(): st.session_state.rev_m2 = st.session_state.input_rev_m2
+
+def update_rev_glob_from_slider(): st.session_state.rev_glob = st.session_state.slider_rev_glob
+def update_rev_glob_from_input(): st.session_state.rev_glob = st.session_state.input_rev_glob
 
 
 # Création des onglets
 tab_flash, tab_expert = st.tabs(["⚡ FLASH (Mobile)", "🏢 EXPERT (Détaillé)"])
 
 # ==============================================================================
-# ONGLET 1 : CALCUL FLASH (INTERFACE SYNCHRONISÉE)
+# ONGLET 1 : CALCUL FLASH (SYNCHRO VALIDÉE)
 # ==============================================================================
 with tab_flash:
-    st.caption("ℹ️ Modifie la case ou la réglette : les deux se mettent à jour !")
+    st.caption("ℹ️ Synchronisation active : Boutons <-> Réglette")
 
     # --- 1. ACQUISITION ---
-    with st.expander("1️⃣ ACQUISITION", expanded=True):
+    with st.expander("1️⃣ SURFACE & PRIX", expanded=True):
         # SURFACE
         st.write("**Surface (m²)**")
         c1, c2 = st.columns([1, 2])
         with c1:
             st.number_input("Saisie", min_value=10.0, max_value=2000.0, step=1.0, 
-                            key="w_surf_input", label_visibility="collapsed",
-                            value=st.session_state.shared_surf, on_change=sync_surf_input)
+                            key="input_surf", value=st.session_state.surf, 
+                            on_change=update_surf_from_input, label_visibility="collapsed")
         with c2:
             st.slider("Glisser", min_value=10.0, max_value=2000.0, 
-                      key="w_surf_slider", label_visibility="collapsed",
-                      value=st.session_state.shared_surf, on_change=sync_surf_slider)
+                      key="slider_surf", value=st.session_state.surf, 
+                      on_change=update_surf_from_slider, label_visibility="collapsed")
 
-        # PRIX
+        # PRIX ACHAT
         st.write("**Prix Achat (€)**")
         c3, c4 = st.columns([1, 2])
         with c3:
             st.number_input("Saisie", min_value=0.0, max_value=5000000.0, step=1000.0, 
-                            key="w_prix_input", label_visibility="collapsed",
-                            value=st.session_state.shared_prix, on_change=sync_prix_input)
+                            key="input_prix", value=st.session_state.prix, 
+                            on_change=update_prix_from_input, label_visibility="collapsed")
         with c4:
             st.slider("Glisser", min_value=0.0, max_value=5000000.0, step=5000.0, 
-                      key="w_prix_slider", label_visibility="collapsed",
-                      value=st.session_state.shared_prix, on_change=sync_prix_slider)
+                      key="slider_prix", value=st.session_state.prix, 
+                      on_change=update_prix_from_slider, label_visibility="collapsed")
         
-        # INDICATEUR
-        curr_surf = st.session_state.shared_surf
-        curr_prix = st.session_state.shared_prix
-        if curr_surf > 0:
-            st.info(f"📍 Prix : **{curr_prix/curr_surf:,.0f} €/m²**")
+        # INFO
+        if st.session_state.surf > 0:
+            pm2 = st.session_state.prix / st.session_state.surf
+            st.info(f"📍 Prix : **{pm2:,.0f} €/m²**")
 
     # --- 2. TRAVAUX ---
     with st.expander("2️⃣ TRAVAUX", expanded=True):
@@ -94,31 +94,32 @@ with tab_flash:
             st.write("**Coût Travaux (€/m²)**")
             tc1, tc2 = st.columns([1, 2])
             with tc1:
-                st.number_input("Saisie", min_value=0.0, max_value=5000.0, step=50.0, 
-                                key="w_cout_input", label_visibility="collapsed",
-                                value=st.session_state.shared_cout_m2, on_change=sync_cout_input)
+                st.number_input("Saisie", min_value=0.0, max_value=5000.0, step=50.0,
+                                key="input_cout", value=st.session_state.cout_m2,
+                                on_change=update_cout_from_input, label_visibility="collapsed")
             with tc2:
-                st.slider("Glisser", min_value=0.0, max_value=5000.0, step=50.0, 
-                          key="w_cout_slider", label_visibility="collapsed",
-                          value=st.session_state.shared_cout_m2, on_change=sync_cout_slider)
+                st.slider("Glisser", min_value=0.0, max_value=5000.0, step=50.0,
+                          key="slider_cout", value=st.session_state.cout_m2,
+                          on_change=update_cout_from_slider, label_visibility="collapsed")
             
-            total_travaux_flash = curr_surf * st.session_state.shared_cout_m2
+            total_travaux_flash = st.session_state.surf * st.session_state.cout_m2
             st.write(f"👉 Budget : **{total_travaux_flash:,.0f} €**")
+            
         else:
             st.write("**Enveloppe Totale (€)**")
             tc3, tc4 = st.columns([1, 2])
             with tc3:
-                st.number_input("Saisie", min_value=0.0, max_value=1000000.0, step=1000.0, 
-                                key="w_env_input", label_visibility="collapsed",
-                                value=st.session_state.shared_env_tx, on_change=sync_env_input)
+                st.number_input("Saisie", min_value=0.0, max_value=1000000.0, step=1000.0,
+                                key="input_env", value=st.session_state.env_tx,
+                                on_change=update_env_from_input, label_visibility="collapsed")
             with tc4:
-                st.slider("Glisser", min_value=0.0, max_value=1000000.0, step=5000.0, 
-                          key="w_env_slider", label_visibility="collapsed",
-                          value=st.session_state.shared_env_tx, on_change=sync_env_slider)
+                st.slider("Glisser", min_value=0.0, max_value=1000000.0, step=5000.0,
+                          key="slider_env", value=st.session_state.env_tx,
+                          on_change=update_env_from_slider, label_visibility="collapsed")
             
-            total_travaux_flash = st.session_state.shared_env_tx
-            if curr_surf > 0:
-                st.write(f"👉 Soit : **{total_travaux_flash/curr_surf:,.0f} €/m²**")
+            total_travaux_flash = st.session_state.env_tx
+            if st.session_state.surf > 0:
+                st.write(f"👉 Soit : **{total_travaux_flash/st.session_state.surf:,.0f} €/m²**")
 
     # --- 3. REVENTE ---
     with st.expander("3️⃣ REVENTE", expanded=True):
@@ -128,39 +129,40 @@ with tab_flash:
             st.write("**Revente estimée (€/m²)**")
             rc1, rc2 = st.columns([1, 2])
             with rc1:
-                st.number_input("Saisie", min_value=1000.0, max_value=40000.0, step=100.0, 
-                                key="w_rev_m2_input", label_visibility="collapsed",
-                                value=st.session_state.shared_rev_m2, on_change=sync_rev_m2_input)
+                st.number_input("Saisie", min_value=1000.0, max_value=40000.0, step=100.0,
+                                key="input_rev_m2", value=st.session_state.rev_m2,
+                                on_change=update_rev_m2_from_input, label_visibility="collapsed")
             with rc2:
-                st.slider("Glisser", min_value=1000.0, max_value=40000.0, step=100.0, 
-                          key="w_rev_m2_slider", label_visibility="collapsed",
-                          value=st.session_state.shared_rev_m2, on_change=sync_rev_m2_slider)
+                st.slider("Glisser", min_value=1000.0, max_value=40000.0, step=100.0,
+                          key="slider_rev_m2", value=st.session_state.rev_m2,
+                          on_change=update_rev_m2_from_slider, label_visibility="collapsed")
             
-            prix_revente_total_flash = curr_surf * st.session_state.shared_rev_m2
+            prix_revente_total_flash = st.session_state.surf * st.session_state.rev_m2
             st.write(f"💰 Total : **{prix_revente_total_flash:,.0f} €**")
+            
         else:
             st.write("**Prix Global Revente (€)**")
             rc3, rc4 = st.columns([1, 2])
             with rc3:
-                st.number_input("Saisie", min_value=0.0, max_value=10000000.0, step=5000.0, 
-                                key="w_rev_glob_input", label_visibility="collapsed",
-                                value=st.session_state.shared_rev_global, on_change=sync_rev_glob_input)
+                st.number_input("Saisie", min_value=0.0, max_value=10000000.0, step=5000.0,
+                                key="input_rev_glob", value=st.session_state.rev_glob,
+                                on_change=update_rev_glob_from_input, label_visibility="collapsed")
             with rc4:
-                st.slider("Glisser", min_value=0.0, max_value=10000000.0, step=5000.0, 
-                          key="w_rev_glob_slider", label_visibility="collapsed",
-                          value=st.session_state.shared_rev_global, on_change=sync_rev_glob_slider)
+                st.slider("Glisser", min_value=0.0, max_value=10000000.0, step=5000.0,
+                          key="slider_rev_glob", value=st.session_state.rev_glob,
+                          on_change=update_rev_glob_from_slider, label_visibility="collapsed")
             
-            prix_revente_total_flash = st.session_state.shared_rev_global
-            if curr_surf > 0:
-                st.write(f"💰 Soit : **{prix_revente_total_flash/curr_surf:,.0f} €/m²**")
+            prix_revente_total_flash = st.session_state.rev_glob
+            if st.session_state.surf > 0:
+                st.write(f"💰 Soit : **{prix_revente_total_flash/st.session_state.surf:,.0f} €/m²**")
 
     # --- RÉSULTATS ---
     st.markdown("---")
     
     include_notaire = st.checkbox("Inclure Notaire (3%)", value=False)
-    cout_total_flash = curr_prix + total_travaux_flash
+    cout_total_flash = st.session_state.prix + total_travaux_flash
     if include_notaire:
-        cout_total_flash += (curr_prix * 0.03)
+        cout_total_flash += (st.session_state.prix * 0.03)
 
     marge_flash = prix_revente_total_flash - cout_total_flash
     
@@ -182,7 +184,7 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (Standard V14)
+# ONGLET 2 : CALCUL EXPERT (Standard V14 - inchangé)
 # ==============================================================================
 with tab_expert:
     st.caption("✅ Moteur certifié V14 (Notaire 3% | Portage 7% + Dossier 1500€)")
