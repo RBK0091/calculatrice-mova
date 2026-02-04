@@ -164,4 +164,113 @@ with tab_expert:
             display_blue_result("NOTAIRE (3%)", f"{frais_notaire_expert:,.0f} €")
 
     # 2. TRAVAUX
-    with st.expander("2️⃣
+    with st.expander("2️⃣ TRAVAUX & ÉTUDES", expanded=False):
+        type_reno = st.selectbox("Gamme", ["Rafraichissement", "Rénovation Simple", "Lourde", "Luxe"], key="e_type_reno")
+        
+        c5, c6 = st.columns(2)
+        cout_travaux_m2 = c5.number_input("Coût Tx (€/m²)", value=1500, step=50, key="e_cout_tx")
+        
+        # Calcul Budget Travaux Base
+        budget_travaux_base = surface * cout_travaux_m2
+        
+        # Annexes
+        st.caption("Frais Annexes")
+        ac1, ac2 = st.columns(2) # 2 colonnes sur mobile c'est mieux
+        archi = ac1.number_input("Architecte", value=0, key="e_archi")
+        geo = ac2.number_input("Géomètre", value=1000, key="e_geo")
+        inge = ac1.number_input("Ingénieur", value=1000, key="e_inge")
+        age_frais = ac2.number_input("Frais AGE", value=2000, key="e_age")
+        autres = st.number_input("Autres", value=0, key="e_autres")
+        
+        # Calcul Total Travaux
+        honoraires_cond = budget_travaux_base * 0.05
+        total_travaux_expert = budget_travaux_base + honoraires_cond + archi + geo + inge + age_frais + autres
+        
+        st.markdown("---")
+        # Affichage du Total Travaux en Bleu
+        display_blue_result("ENVELOPPE TRAVAUX", f"{total_travaux_expert:,.0f} €")
+
+    # 3. TEMPS
+    with st.expander("3️⃣ TEMPS & CHARGES", expanded=False):
+        tc1, tc2 = st.columns(2)
+        duree_mois = tc1.slider("Durée (mois)", 3, 18, 10, key="e_duree")
+        retard_mois = tc2.slider("Retard", 0, 12, 0, key="e_retard")
+        
+        tc3, tc4 = st.columns(2)
+        charges_an = tc3.number_input("Charges/An", value=1200, key="e_charges")
+        tf_an = tc4.number_input("Taxe Fonc./An", value=917, key="e_tf")
+        
+        # Calculs Intermédiaires pour le "Bleu"
+        enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire_expert + total_travaux_expert
+        duree_totale = duree_mois + retard_mois
+        # Frais Financiers
+        base_portage = enveloppe_physique * 0.75
+        interets = base_portage * 0.07 * (duree_totale / 12)
+        frais_dossier = 1500
+        # Charges
+        charges_prorata = (charges_an + tf_an) * (duree_totale / 12)
+        
+        cout_temps_total = interets + frais_dossier + charges_prorata
+        
+        st.markdown("---")
+        display_blue_result("COÛT DU TEMPS (FIN + CHG)", f"{cout_temps_total:,.0f} €")
+
+    # 4. REVENTE
+    with st.expander("4️⃣ REVENTE", expanded=False):
+        mode_revente_expert = st.radio("Mode", ["€/m²", "Montant"], horizontal=True, label_visibility="collapsed", key="e_mode_revente")
+        
+        rc1, rc2 = st.columns(2)
+        prix_revente_total_expert = 0
+        
+        if mode_revente_expert == "€/m²":
+            prix_rev_m2 = rc1.number_input("Vente/m²", value=10500, step=100, key="e_rev_m2_ex")
+            prix_revente_total_expert = surface * prix_rev_m2
+            with rc2: display_blue_result("PRIX DE SORTIE", f"{prix_revente_total_expert/1000:.0f} k€")
+        else:
+            prix_revente_total_expert = rc1.number_input("Prix de sortie", value=520000, step=5000, key="e_rev_glob_ex")
+            with rc2:
+                val_m2 = f"{prix_revente_total_expert/surface:,.0f} €" if surface > 0 else "0 €"
+                display_blue_result("SOIT AU M²", val_m2)
+        
+        st.markdown("---")
+        frais_agence_rev = st.number_input("Frais Agence Revente (€)", value=10000, step=500, key="e_frais_rev")
+
+    # --- CALCULS FINAUX EXPERT ---
+    frais_hypotheque = prix_offre * 0.015
+    frais_levee = 1500
+    frais_sep = enveloppe_physique * 0.02
+    
+    total_cout_op_expert = enveloppe_physique + frais_hypotheque + frais_levee + cout_temps_total + frais_sep
+    net_vendeur_reel = prix_revente_total_expert - frais_agence_rev
+    marge_nette_expert = net_vendeur_reel - total_cout_op_expert
+    
+    renta_expert = (marge_nette_expert / total_cout_op_expert * 100) if total_cout_op_expert > 0 else 0
+
+    # --- SYNTHÈSE EXPERT ---
+    st.markdown("### 📊 Synthèse")
+    display_custom_kpi("COÛT DE L'OPÉRATION", f"{total_cout_op_expert/1000:.0f} k€", "MARGE", f"{marge_nette_expert/1000:.0f} k€")
+    
+    st.markdown('<div class="safe-zone"></div>', unsafe_allow_html=True)
+
+    # Note : Le sticky footer est global, il affiche la renta calculée dans l'onglet actif.
+    # Mais Streamlit exécute tout le script. 
+    # ASTUCE : On ré-affiche le footer ICI pour écraser celui du Flash si on est dans l'onglet Expert.
+    
+    color_renta_ex = "#d32f2f"
+    if renta_expert >= 25: color_renta_ex = "#f57c00"
+    if renta_expert >= 40: color_renta_ex = "#388e3c"
+
+    html_footer_ex = f"""<div class="fixed-footer"><div class="footer-label">RENTABILITÉ</div><div class="footer-value" style="color: {color_renta_ex};">{renta_expert:.1f} %</div></div>"""
+    st.markdown(html_footer_ex, unsafe_allow_html=True)
+
+    # --- RÉCAPITULATIF ---
+    with st.expander("🔎 DÉTAIL COMPLET"):
+        st.write("### 1. Acquisition & Travaux")
+        st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
+        
+        st.write("### 2. Banque & Garanties")
+        st.write(f"- Coût du Temps (Intérêts + Charges) : **{cout_temps_total:,.0f} €**")
+        st.write(f"- Hypothèque + Levée : **{frais_hypotheque + frais_levee:,.0f} €**")
+        
+        st.write("### 3. Structure")
+        st.write(f"- Frais SEP (2%) : **{frais_sep:,.0f} €**")
