@@ -229,4 +229,52 @@ with tab_expert:
     frais_levee = 1500
     duree_totale = duree_mois + retard_mois
     base_portage = enveloppe_physique * 0.75
-    interets_portage = base_portage * 0.07 * (duree_totale /
+    interets_portage = base_portage * 0.07 * (duree_totale / 12)
+    frais_dossier_banque = 1500 
+    total_cout_portage_banque = interets_portage + frais_dossier_banque
+    frais_sep = enveloppe_physique * 0.02
+    cout_charges_totales = (charges_annuelles * (duree_totale / 12)) + (taxe_fonciere * (duree_totale / 12))
+
+    total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
+    
+    net_vendeur_reel = prix_revente_total - montant_agence_revente
+    total_plus_value = net_vendeur_reel - total_cout_operation
+    if total_cout_operation > 0:
+        pourcentage_marge = (total_plus_value / total_cout_operation) * 100
+    else:
+        pourcentage_marge = 0
+
+    # --- RÉSULTATS VISUELS ---
+    st.markdown("---")
+    st.header("📊 Résultats")
+    
+    res1, res2, res3 = st.columns(3)
+    res1.metric("Prix Revente", f"{prix_revente_total:,.0f} €")
+    res2.metric("Coût Total", f"{total_cout_operation:,.0f} €")
+    res3.metric("Plus-Value Net", f"{total_plus_value:,.0f} €", delta_color="normal")
+
+    st.markdown(f"### 🎯 Rentabilité : {pourcentage_marge:.2f} %")
+    if pourcentage_marge < 25:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.error("Trop faible (<25%)")
+    elif pourcentage_marge < 40:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.warning("Bon (Partenaire)")
+    else:
+        st.progress(min(pourcentage_marge/50, 1.0))
+        st.success("Excellent (Club MOVA)")
+
+    # --- RÉCAPITULATIF ---
+    st.markdown("---")
+    with st.expander("🔎 DÉTAIL COMPLET (Cliquer pour ouvrir)"):
+        st.write("### 1. Acquisition & Travaux")
+        st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
+        st.caption(f"Dont Notaire : {frais_notaire:,.0f} € | Dont Travaux (+5% cond.) : {total_travaux:,.0f} €")
+        
+        st.write("### 2. Banque & Garanties")
+        st.write(f"- Portage (7%) + Dossier (1500€) : **{total_cout_portage_banque:,.0f} €**")
+        st.write(f"- Hypothèque (1,5%) + Levée (1500€) : **{frais_hypotheque + frais_levee:,.0f} €**")
+        
+        st.write("### 3. Structure & Vie")
+        st.write(f"- Frais SEP (2%) : **{frais_sep:,.0f} €**")
+        st.write(f"- Charges & TF : **{cout_charges_totales:,.0f} €**")
