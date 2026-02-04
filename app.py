@@ -2,91 +2,88 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢", layout="centered")
 
-# CSS Hack pour améliorer l'aspect des boutons radios (les rendre plus "boutons")
+# CSS Hack pour le style (Boutons radios & Metrics mobile)
 st.markdown("""
 <style>
+/* Style des boutons radios */
 div.row-widget.stRadio > div {flex-direction: row; justify-content: center;}
 div.row-widget.stRadio > div > label {
     background-color: #f0f2f6; padding: 10px 20px; border-radius: 10px; margin: 0 5px; cursor: pointer; border: 1px solid #d1d5db;
 }
 div.row-widget.stRadio > div > label[data-baseweb="radio"] {background-color: #ff4b4b; color: white;}
+
+/* Style pour forcer l'affichage côte à côte des metrics sur mobile */
+[data-testid="column"] {
+    min-width: 0px !important; /* Permet aux colonnes de rétrécir sur mobile */
+}
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🏢 Calculatrice MDB (V15)")
-# st.caption("Design Compact & Responsive") 
+st.title("🏢 Calculatrice MDB (V22)")
 
 # Création des onglets
 tab_flash, tab_expert = st.tabs(["⚡ FLASH (Visite)", "🏢 EXPERT (Détaillé)"])
 
 # ==============================================================================
-# ONGLET 1 : CALCUL FLASH (DESIGN COMPACT)
+# ONGLET 1 : CALCUL FLASH (ACCORDÉONS + RÉSULTATS CÔTE À CÔTE)
 # ==============================================================================
 with tab_flash:
-    # BLOC 1 : L'ACHAT
-    st.markdown("### 1️⃣ Acquisition")
-    c1, c2 = st.columns(2)
-    with c1:
-        surf_flash = st.number_input("📏 Surface (m²)", value=20.0, step=1.0, key="f_surf")
-    with c2:
-        prix_flash = st.number_input("💶 Prix Achat (€)", value=200000, step=1000, key="f_prix")
-    
-    # Indicateur visuel immédiat
-    if surf_flash > 0:
-        pm2_flash = prix_flash / surf_flash
-        st.info(f"📍 Prix Actuel : **{pm2_flash:,.0f} €/m²**")
+    # --- BLOC 1 : ACQUISITION (Accordéon) ---
+    with st.expander("1️⃣ ACQUISITION", expanded=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            surf_flash = st.number_input("Surface (m²)", value=20.0, step=1.0, key="f_surf")
+        with c2:
+            prix_flash = st.number_input("Prix Achat (€)", value=200000, step=1000, key="f_prix")
+        
+        # Indicateur visuel immédiat
+        if surf_flash > 0:
+            pm2_flash = prix_flash / surf_flash
+            st.info(f"📍 Prix Actuel : **{pm2_flash:,.0f} €/m²**")
 
-    st.markdown("---")
+    # --- BLOC 2 : TRAVAUX (Accordéon) ---
+    with st.expander("2️⃣ TRAVAUX", expanded=True):
+        mode_travaux_flash = st.radio("Estimation :", ["Par m² (€/m²)", "Forfait Global (€)"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
+        
+        c3, c4 = st.columns(2)
+        
+        if mode_travaux_flash == "Par m² (€/m²)":
+            with c3:
+                cout_m2_flash = st.number_input("Coût/m² (€)", value=2000, step=100, key="f_cout_m2")
+            with c4:
+                total_travaux_flash = surf_flash * cout_m2_flash
+                st.metric("Budget Travaux", f"{total_travaux_flash:,.0f} €")
+        else:
+            with c3:
+                total_travaux_flash = st.number_input("Enveloppe (€)", value=40000, step=1000, key="f_total_travaux")
+            with c4:
+                if surf_flash > 0:
+                    calc_m2_travaux = total_travaux_flash / surf_flash
+                    st.metric("Soit au m²", f"{calc_m2_travaux:,.0f} €/m²")
+                else:
+                    st.metric("Soit au m²", "0 €")
 
-    # BLOC 2 : TRAVAUX (Sélecteur Bouton)
-    st.markdown("### 2️⃣ Travaux")
-    # Sélecteur horizontal centré
-    mode_travaux_flash = st.radio("Type d'estimation :", ["Par m² (€/m²)", "Forfait Global (€)"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
-    
-    c3, c4 = st.columns([1, 1]) # Colonnes égales
-    
-    if mode_travaux_flash == "Par m² (€/m²)":
-        with c3:
-            cout_m2_flash = st.number_input("Coût/m² (€)", value=2000, step=100, key="f_cout_m2")
-        with c4:
-            total_travaux_flash = surf_flash * cout_m2_flash
-            st.metric("Budget Travaux", f"{total_travaux_flash:,.0f} €")
-    else:
-        with c3:
-            total_travaux_flash = st.number_input("Enveloppe Totale (€)", value=40000, step=1000, key="f_total_travaux")
-        with c4:
-            if surf_flash > 0:
-                calc_m2_travaux = total_travaux_flash / surf_flash
-                st.metric("Coût ramené au m²", f"{calc_m2_travaux:,.0f} €/m²")
-            else:
-                st.metric("Coût au m²", "0 €")
+    # --- BLOC 3 : REVENTE (Accordéon) ---
+    with st.expander("3️⃣ REVENTE", expanded=True):
+        mode_revente_flash = st.radio("Revente :", ["Par m² (€/m²)", "Prix Global (€)"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
+        
+        c5, c6 = st.columns(2)
+        
+        if mode_revente_flash == "Par m² (€/m²)":
+            with c5:
+                prix_revente_m2_flash = st.number_input("Revente/m²", value=12000, step=100, key="f_revente_m2")
+            with c6:
+                prix_revente_total_flash = surf_flash * prix_revente_m2_flash
+                st.metric("Total Revente", f"{prix_revente_total_flash:,.0f} €")
+        else:
+            with c5:
+                prix_revente_total_flash = st.number_input("Prix Global", value=340000, step=5000, key="f_revente_global")
+            with c6:
+                if surf_flash > 0:
+                    calc_m2_flash = prix_revente_total_flash / surf_flash
+                    st.metric("Soit au m²", f"{calc_m2_flash:,.0f} €/m²")
 
-    st.markdown("---")
-
-    # BLOC 3 : REVENTE (Sélecteur Bouton)
-    st.markdown("### 3️⃣ Revente")
-    mode_revente_flash = st.radio("Type de revente :", ["Par m² (€/m²)", "Prix Global (€)"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
-    
-    c5, c6 = st.columns(2)
-    
-    if mode_revente_flash == "Par m² (€/m²)":
-        with c5:
-            prix_revente_m2_flash = st.number_input("Revente estimée/m²", value=12000, step=100, key="f_revente_m2")
-        with c6:
-            prix_revente_total_flash = surf_flash * prix_revente_m2_flash
-            st.metric("Prix Revente Total", f"{prix_revente_total_flash:,.0f} €")
-    else:
-        with c5:
-            prix_revente_total_flash = st.number_input("Prix Revente Global", value=340000, step=5000, key="f_revente_global")
-        with c6:
-            if surf_flash > 0:
-                calc_m2_flash = prix_revente_total_flash / surf_flash
-                st.metric("Soit au m²", f"{calc_m2_flash:,.0f} €/m²")
-
-    # RÉSULTATS FLASH
-    st.markdown("---")
-    
-    # Calculs
+    # --- CALCULS ---
     include_notaire = st.checkbox("Inclure Notaire (3%)", value=False, key="f_check_notaire")
     cout_total_flash = prix_flash + total_travaux_flash
     if include_notaire:
@@ -99,22 +96,27 @@ with tab_flash:
     else:
         renta_flash = 0
 
-    # Affichage en 3 colonnes pour résultat compact
-    kpi1, kpi2, kpi3 = st.columns([1, 1, 1.5])
-    kpi1.metric("Coût Total", f"{cout_total_flash/1000:.0f} k€", help="Achat + Travaux (+ Notaire si coché)")
-    kpi2.metric("Marge Brute", f"{marge_flash/1000:.0f} k€")
+    # --- RÉSULTATS COMPACTS (MOBILE) ---
+    st.markdown("---")
     
-    # Couleur dynamique pour la renta
+    # Ligne 1 : Coût Total + Marge (Côte à côte)
+    kpi_col1, kpi_col2 = st.columns(2)
+    with kpi_col1:
+        st.metric("📉 Coût Total", f"{cout_total_flash/1000:.0f} k€")
+    with kpi_col2:
+        st.metric("💰 Marge Brute", f"{marge_flash/1000:.0f} k€")
+    
+    # Ligne 2 : Rentabilité (Largeur totale pour bien voir)
     if renta_flash < 25:
-        kpi3.error(f"Renta : {renta_flash:.1f} %")
+        st.error(f"🛑 Rentabilité : {renta_flash:.1f} % (Trop faible)")
     elif renta_flash < 40:
-        kpi3.warning(f"Renta : {renta_flash:.1f} %")
+        st.warning(f"⚠️ Rentabilité : {renta_flash:.1f} % (Moyen)")
     else:
-        kpi3.success(f"Renta : {renta_flash:.1f} %")
+        st.success(f"🚀 Rentabilité : {renta_flash:.1f} % (Excellent)")
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (DESIGN OPTIMISÉ)
+# ONGLET 2 : CALCUL EXPERT (BASE V15 CONSERVÉE)
 # ==============================================================================
 with tab_expert:
     st.caption("✅ Moteur certifié V14 (Notaire 3% | Portage 7% + Dossier 1500€)")
@@ -192,74 +194,4 @@ with tab_expert:
             mode_revente_expert = st.radio("Mode Revente", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="e_mode_revente")
             if mode_revente_expert == "€/m²":
                 prix_revente_m2_expert = st.number_input("Prix/m² (€)", value=10500, step=100, key="e_rev_m2_input")
-                prix_revente_total = surface * prix_revente_m2_expert
-            else:
-                prix_revente_total = st.number_input("Prix Global (€)", value=520000, step=1000, key="e_rev_global_input")
-        
-        with rc2:
-            montant_agence_revente = st.number_input("Frais Agence Vente (€)", value=10000, step=500, key="e_frais_rev")
-            if mode_revente_expert == "€/m²":
-                st.info(f"Total: **{prix_revente_total:,.0f} €**")
-            elif surface > 0:
-                st.info(f"Soit: **{prix_revente_total/surface:,.0f} €/m²**")
-
-    # --- CALCULS ---
-    budget_travaux_base = surface * cout_travaux_m2
-    honoraires_conducteur = budget_travaux_base * 0.05 
-    total_travaux = budget_travaux_base + honoraires_conducteur + architecte + geometre + ingenieur + age_frais + autres_frais_travaux
-    enveloppe_physique = prix_offre + frais_agence_acq + frais_notaire + total_travaux
-
-    frais_hypotheque = prix_offre * 0.015
-    frais_levee = 1500
-    duree_totale = duree_mois + retard_mois
-    base_portage = enveloppe_physique * 0.75
-    interets_portage = base_portage * 0.07 * (duree_totale / 12)
-    frais_dossier_banque = 1500 
-    total_cout_portage_banque = interets_portage + frais_dossier_banque
-    frais_sep = enveloppe_physique * 0.02
-    cout_charges_totales = (charges_annuelles * (duree_totale / 12)) + (taxe_fonciere * (duree_totale / 12))
-
-    total_cout_operation = enveloppe_physique + frais_hypotheque + frais_levee + total_cout_portage_banque + frais_sep + cout_charges_totales
-    
-    net_vendeur_reel = prix_revente_total - montant_agence_revente
-    total_plus_value = net_vendeur_reel - total_cout_operation
-    if total_cout_operation > 0:
-        pourcentage_marge = (total_plus_value / total_cout_operation) * 100
-    else:
-        pourcentage_marge = 0
-
-    # --- RÉSULTATS VISUELS ---
-    st.markdown("---")
-    st.header("📊 Résultats")
-    
-    res1, res2, res3 = st.columns(3)
-    res1.metric("Prix Revente", f"{prix_revente_total:,.0f} €")
-    res2.metric("Coût Total", f"{total_cout_operation:,.0f} €")
-    res3.metric("Plus-Value Net", f"{total_plus_value:,.0f} €", delta_color="normal")
-
-    # Jauge Renta Large
-    st.markdown(f"### 🎯 Rentabilité : {pourcentage_marge:.2f} %")
-    if pourcentage_marge < 25:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.error("Trop faible (<25%)")
-    elif pourcentage_marge < 40:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.warning("Bon (Partenaire)")
-    else:
-        st.progress(min(pourcentage_marge/50, 1.0))
-        st.success("Excellent (Club MOVA)")
-
-    # --- RÉCAPITULATIF (Restauré) ---
-    st.markdown("---")
-    with st.expander("🔎 DÉTAIL COMPLET (Cliquer pour ouvrir)"):
-        st.write("### 1. Acquisition & Travaux")
-        st.write(f"- Enveloppe Physique : **{enveloppe_physique:,.0f} €**")
-        st.caption(f"Dont Notaire : {frais_notaire:,.0f} € | Dont Travaux (+5% cond.) : {total_travaux:,.0f} €")
-        
-        st.write("### 2. Banque & Garanties")
-        st.write(f"- Portage (7%) + Dossier (1500€) : **{total_cout_portage_banque:,.0f} €**")
-        st.write(f"- Hypothèque (1,5%) + Levée (1500€) : **{frais_hypotheque + frais_levee:,.0f} €**")
-        
-        st.write("### 3. Structure & Vie")
-        st.write(f"- Frais SEP (2%) : **{frais_sep:,.0f} €**")
-        st.write(f"- Charges & TF : **{cout_charges_totales:,.0f} €**")
+                prix_revente_total = surface * prix_re
