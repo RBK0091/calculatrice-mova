@@ -2,112 +2,131 @@ import streamlit as st
 
 st.set_page_config(page_title="Calculatrice MDB - MOVA", page_icon="🏢", layout="centered")
 
-# CSS pour le style (Boutons radios & accordéons)
+# CSS pour aligner verticalement les boutons +/- avec la réglette
 st.markdown("""
 <style>
 div.row-widget.stRadio > div {flex-direction: row; justify-content: center;}
-div.row-widget.stRadio > div > label {
-    background-color: #f0f2f6; padding: 5px 15px; border-radius: 8px; margin: 0 5px; cursor: pointer; border: 1px solid #d1d5db;
-}
-div.row-widget.stRadio > div > label[data-baseweb="radio"] {background-color: #ff4b4b; color: white;}
-.streamlit-expanderHeader {font-weight: bold; font-size: 1.1rem;}
+/* Centrer les boutons dans leurs colonnes */
+div[data-testid="column"] { display: flex; align-items: center; justify-content: center; }
+/* Style boutons compacts */
+button[kind="secondary"] { padding: 0.2rem 0.7rem; line-height: 1.2; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🏢 Calculatrice MDB (V17)")
+st.title("🏢 Calculatrice MDB (V18)")
 
-# --- GESTION DE L'ÉTAT (SESSION STATE) POUR LA SYNCHRONISATION ---
-# C'est ce qui permet de lier la réglette et les boutons +/-
-if 'f_surf' not in st.session_state: st.session_state.f_surf = 46.0
-if 'f_prix' not in st.session_state: st.session_state.f_prix = 240000.0
-if 'f_cout_m2' not in st.session_state: st.session_state.f_cout_m2 = 1500.0
-if 'f_rev_m2' not in st.session_state: st.session_state.f_rev_m2 = 10500.0
+# --- INITIALISATION DES VARIABLES (MÉMOIRE) ---
+# C'est indispensable pour que les boutons fassent bouger la réglette
+if 'surf' not in st.session_state: st.session_state.surf = 46.0
+if 'prix' not in st.session_state: st.session_state.prix = 240000.0
+if 'cout_m2' not in st.session_state: st.session_state.cout_m2 = 1500.0
+if 'rev_m2' not in st.session_state: st.session_state.rev_m2 = 10500.0
+if 'env_travaux' not in st.session_state: st.session_state.env_travaux = 40000
+if 'prix_global_rev' not in st.session_state: st.session_state.prix_global_rev = 340000
+
+# --- FONCTION MAGIQUE : LE SLIDER AVEC BOUTONS +/- ---
+def slider_plus_moins(label, key_state, min_v, max_v, step, unit=""):
+    """Crée une ligne : [ - ] [ SLIDER ] [ + ]"""
+    
+    # Titre au dessus
+    st.write(f"**{label}**")
+    
+    col_minus, col_slider, col_plus = st.columns([1, 6, 1])
+    
+    # BOUTON MOINS (Gauche)
+    with col_minus:
+        if st.button("➖", key=f"btn_minus_{key_state}"):
+            new_val = st.session_state[key_state] - step
+            if new_val >= min_v:
+                st.session_state[key_state] = new_val
+                st.rerun() # Recharge la page pour montrer le mouvement
+
+    # LA RÉGLETTE (Milieu)
+    with col_slider:
+        val = st.slider(
+            label, 
+            min_value=float(min_v), 
+            max_value=float(max_v), 
+            step=float(step), 
+            key=f"slider_{key_state}", 
+            value=float(st.session_state[key_state]), 
+            label_visibility="collapsed"
+        )
+        # Si on bouge la réglette à la main, on met à jour la mémoire
+        if val != st.session_state[key_state]:
+            st.session_state[key_state] = val
+            st.rerun()
+
+    # BOUTON PLUS (Droite)
+    with col_plus:
+        if st.button("➕", key=f"btn_plus_{key_state}"):
+            new_val = st.session_state[key_state] + step
+            if new_val <= max_v:
+                st.session_state[key_state] = new_val
+                st.rerun()
+    
+    # Affichage de la valeur exacte en petit dessous
+    st.caption(f"Valeur : {st.session_state[key_state]:,.0f} {unit}")
+
 
 # Création des onglets
-tab_flash, tab_expert = st.tabs(["⚡ FLASH (Temps Réel)", "🏢 EXPERT (Détaillé)"])
+tab_flash, tab_expert = st.tabs(["⚡ FLASH (Ergonomie V18)", "🏢 EXPERT (Détaillé)"])
 
 # ==============================================================================
-# ONGLET 1 : CALCUL FLASH (HYBRIDE : SLIDER + BOUTONS)
+# ONGLET 1 : CALCUL FLASH (INTERFACE MOBILE)
 # ==============================================================================
 with tab_flash:
-    st.caption("👈 Utilise la Réglette (Vitesse) OU les boutons +/- (Précision)")
+    # st.info("Interface optimisée : Boutons sur les côtés, Réglette au centre.")
 
-    # --- BLOC 1 : ACQUISITION ---
-    with st.expander("1️⃣ ACQUISITION (Surface & Prix)", expanded=True):
-        # SURFACE
-        c1, c2 = st.columns([1, 2]) # Colonne 1 plus petite pour les boutons
-        with c1:
-            # Input avec boutons +/- (Précision)
-            st.number_input("Surface (m²)", min_value=10.0, max_value=2000.0, step=1.0, key="f_surf")
-        with c2:
-            # Slider (Vitesse) - Connecté à la même variable via session_state
-            st.slider("Glisser Surface", min_value=10.0, max_value=2000.0, key="slider_surf", 
-                      value=st.session_state.f_surf, label_visibility="collapsed",
-                      on_change=lambda: st.session_state.update({"f_surf": st.session_state.slider_surf}))
+    # --- 1. ACQUISITION ---
+    with st.expander("1️⃣ SURFACE & PRIX", expanded=True):
+        # Surface
+        slider_plus_moins("📏 Surface (m²)", "surf", 10, 2000, 1, "m²")
+        st.markdown("") # petit espace
+        # Prix
+        slider_plus_moins("💶 Prix Achat (€)", "prix", 0, 5000000, 1000, "€")
 
-        # PRIX ACHAT
-        c3, c4 = st.columns([1, 2])
-        with c3:
-            st.number_input("Prix Achat (€)", min_value=0.0, max_value=5000000.0, step=1000.0, key="f_prix")
-        with c4:
-            st.slider("Glisser Prix", min_value=0.0, max_value=5000000.0, step=5000.0, key="slider_prix",
-                      value=st.session_state.f_prix, label_visibility="collapsed",
-                      on_change=lambda: st.session_state.update({"f_prix": st.session_state.slider_prix}))
+        # Calcul Prix m²
+        s_val = st.session_state.surf
+        p_val = st.session_state.prix
+        if s_val > 0:
+            st.info(f"📍 Prix : **{p_val/s_val:,.0f} €/m²**")
+
+    # --- 2. TRAVAUX ---
+    with st.expander("2️⃣ TRAVAUX", expanded=True):
+        mode_travaux = st.radio("Mode :", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="f_mode_tx")
         
-        # Indicateur Prix m²
-        surf_val = st.session_state.f_surf
-        prix_val = st.session_state.f_prix
-        if surf_val > 0:
-            pm2_flash = prix_val / surf_val
-            st.info(f"📍 Prix Achat : **{pm2_flash:,.0f} €/m²**")
-
-    # --- BLOC 2 : TRAVAUX ---
-    with st.expander("2️⃣ TRAVAUX (Estimation)", expanded=True):
-        mode_travaux_flash = st.radio("Mode :", ["€/m²", "Forfait €"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
-        
-        if mode_travaux_flash == "€/m²":
-            tc1, tc2 = st.columns([1, 2])
-            with tc1:
-                st.number_input("Coût (€/m²)", min_value=0.0, max_value=5000.0, step=50.0, key="f_cout_m2")
-            with tc2:
-                st.slider("Glisser Coût", min_value=0.0, max_value=5000.0, step=50.0, key="slider_cout_m2",
-                          value=st.session_state.f_cout_m2, label_visibility="collapsed",
-                          on_change=lambda: st.session_state.update({"f_cout_m2": st.session_state.slider_cout_m2}))
-            
-            total_travaux_flash = surf_val * st.session_state.f_cout_m2
+        if mode_travaux == "€/m²":
+            slider_plus_moins("🛠️ Coût Travaux (€/m²)", "cout_m2", 0, 5000, 50, "€/m²")
+            total_travaux_flash = s_val * st.session_state.cout_m2
             st.write(f"👉 Budget : **{total_travaux_flash:,.0f} €**")
         else:
-            total_travaux_flash = st.number_input("Enveloppe Totale (€)", min_value=0, max_value=1000000, value=40000, step=1000, key="f_total_travaux")
-            if surf_val > 0:
-                st.write(f"👉 Soit : **{total_travaux_flash/surf_val:,.0f} €/m²**")
+            slider_plus_moins("🛠️ Enveloppe Totale (€)", "env_travaux", 0, 1000000, 1000, "€")
+            total_travaux_flash = st.session_state.env_travaux
+            if s_val > 0:
+                st.write(f"👉 Soit : **{total_travaux_flash/s_val:,.0f} €/m²**")
 
-    # --- BLOC 3 : REVENTE ---
-    with st.expander("3️⃣ REVENTE (Objectif)", expanded=True):
-        mode_revente_flash = st.radio("Mode :", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
+    # --- 3. REVENTE ---
+    with st.expander("3️⃣ REVENTE", expanded=True):
+        mode_revente = st.radio("Mode Revente :", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="f_mode_rev")
         
-        if mode_revente_flash == "€/m²":
-            rc1, rc2 = st.columns([1, 2])
-            with rc1:
-                st.number_input("Revente (€/m²)", min_value=1000.0, max_value=40000.0, step=100.0, key="f_rev_m2")
-            with rc2:
-                st.slider("Glisser Revente", min_value=1000.0, max_value=40000.0, step=100.0, key="slider_rev_m2",
-                          value=st.session_state.f_rev_m2, label_visibility="collapsed",
-                          on_change=lambda: st.session_state.update({"f_rev_m2": st.session_state.slider_rev_m2}))
-            
-            prix_revente_total_flash = surf_val * st.session_state.f_rev_m2
-            st.write(f"💰 Total Revente : **{prix_revente_total_flash:,.0f} €**")
+        if mode_revente == "€/m²":
+            slider_plus_moins("💰 Revente (€/m²)", "rev_m2", 1000, 40000, 100, "€/m²")
+            prix_revente_total_flash = s_val * st.session_state.rev_m2
+            st.write(f"💵 Total : **{prix_revente_total_flash:,.0f} €**")
         else:
-            prix_revente_total_flash = st.number_input("Prix Global Revente (€)", value=340000, step=5000, key="f_revente_global")
-            if surf_val > 0:
-                st.write(f"💰 Soit : **{prix_revente_total_flash/surf_val:,.0f} €/m²**")
+            slider_plus_moins("💰 Revente Global (€)", "prix_global_rev", 0, 10000000, 5000, "€")
+            prix_revente_total_flash = st.session_state.prix_global_rev
+            if s_val > 0:
+                st.write(f"💵 Soit : **{prix_revente_total_flash/s_val:,.0f} €/m²**")
 
     # --- RÉSULTATS ---
     st.markdown("---")
     
-    include_notaire = st.checkbox("Inclure Notaire (3%)", value=False, key="f_check_notaire")
-    cout_total_flash = prix_val + total_travaux_flash
+    include_notaire = st.checkbox("Inclure Notaire (3%)", value=False)
+    cout_total_flash = p_val + total_travaux_flash
     if include_notaire:
-        cout_total_flash += (prix_val * 0.03)
+        cout_total_flash += (p_val * 0.03)
 
     marge_flash = prix_revente_total_flash - cout_total_flash
     
@@ -129,7 +148,7 @@ with tab_flash:
 
 
 # ==============================================================================
-# ONGLET 2 : CALCUL EXPERT (PLAGES MISES A JOUR)
+# ONGLET 2 : CALCUL EXPERT (Standard)
 # ==============================================================================
 with tab_expert:
     st.caption("✅ Moteur certifié V14 (Notaire 3% | Portage 7% + Dossier 1500€)")
@@ -139,7 +158,6 @@ with tab_expert:
         st.subheader("1. Acquisition")
         ec1, ec2 = st.columns(2)
         with ec1:
-            # Plages augmentées ici aussi
             surface = st.number_input("Surface (m²)", value=46.6, step=0.1, min_value=0.0, max_value=2000.0, key="e_surf")
             prix_offre = st.number_input("Prix d'achat (€)", value=240000, step=1000, min_value=0, max_value=5000000, key="e_prix")
             if surface > 0:
@@ -205,11 +223,9 @@ with tab_expert:
         with rc1:
             mode_revente_expert = st.radio("Mode Revente", ["€/m²", "Global €"], horizontal=True, label_visibility="collapsed", key="e_mode_revente")
             if mode_revente_expert == "€/m²":
-                # Max value augmenté
                 prix_revente_m2_expert = st.number_input("Prix/m² (€)", value=10500, step=100, max_value=50000, key="e_rev_m2_input")
                 prix_revente_total = surface * prix_revente_m2_expert
             else:
-                # Max value augmenté
                 prix_revente_total = st.number_input("Prix Global (€)", value=520000, step=1000, max_value=10000000, key="e_rev_global_input")
         
         with rc2:
