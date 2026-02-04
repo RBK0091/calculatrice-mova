@@ -69,7 +69,7 @@ st.markdown("""
 # --- FONCTIONS D'AFFICHAGE CUSTOM ---
 
 def display_blue_result(label, value):
-    """Affiche le résultat en bleu dans une boite alignée avec l'input d'à côté"""
+    """Affiche le résultat en bleu dans une boite unifiée"""
     html = f"""
     <div class="result-box">
         <div class="result-label">{label}</div>
@@ -101,7 +101,7 @@ st.title("🏢 Calculatrice MDB")
 tab_flash, tab_expert = st.tabs(["⚡ FLASH", "🏢 EXPERT"])
 
 # ==============================================================================
-# ONGLET 1 : FLASH (DESIGN MOBILE V28)
+# ONGLET 1 : FLASH (DESIGN MOBILE V29)
 # ==============================================================================
 with tab_flash:
     
@@ -113,14 +113,14 @@ with tab_flash:
         with c2:
             prix_flash = st.number_input("Prix Net (€)", value=200000, step=1000, key="f_prix")
         
-        # Le prix au m² en bleu (CHARTE UNIFIÉE)
-        st.markdown("---")
+        # Le prix au m² en bleu (CHARTE UNIFIÉE AVEC LES AUTRES VOLETS)
         if surf_flash > 0:
-            st.markdown(f"<div style='text-align:center; color:#0068c9; font-weight:bold; font-size:1.1rem;'>📍 {prix_flash/surf_flash:,.0f} €/m²</div>", unsafe_allow_html=True)
+            display_blue_result("PRIX ACTUEL", f"{prix_flash/surf_flash:,.0f} €/m²")
 
     # --- 2. TRAVAUX ---
     with st.expander("2️⃣ TRAVAUX", expanded=False):
-        mode_travaux_flash = st.radio("Mode :", ["€/m²", "Global"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
+        # Renommage "Global" -> "Montant"
+        mode_travaux_flash = st.radio("Mode :", ["€/m²", "Montant"], horizontal=True, label_visibility="collapsed", key="f_mode_travaux")
         
         c3, c4 = st.columns(2)
         if mode_travaux_flash == "€/m²":
@@ -128,7 +128,6 @@ with tab_flash:
                 cout_m2_flash = st.number_input("Coût/m²", value=2000, step=100, key="f_cout_m2")
                 total_travaux_flash = surf_flash * cout_m2_flash
             with c4:
-                # ICI : Remplacement de la case grise par le style BLEU
                 display_blue_result("BUDGET TOTAL", f"{total_travaux_flash/1000:.1f} k€")
         else:
             with c3:
@@ -141,7 +140,8 @@ with tab_flash:
 
     # --- 3. REVENTE ---
     with st.expander("3️⃣ REVENTE", expanded=False):
-        mode_revente_flash = st.radio("Mode :", ["€/m²", "Global"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
+        # Renommage "Global" -> "Montant"
+        mode_revente_flash = st.radio("Mode :", ["€/m²", "Montant"], horizontal=True, label_visibility="collapsed", key="f_mode_revente")
         
         c5, c6 = st.columns(2)
         if mode_revente_flash == "€/m²":
@@ -149,11 +149,11 @@ with tab_flash:
                 prix_revente_m2_flash = st.number_input("Vente/m²", value=12000, step=100, key="f_revente_m2")
                 prix_revente_total_flash = surf_flash * prix_revente_m2_flash
             with c6:
-                # ICI : Remplacement de la case grise par le style BLEU
                 display_blue_result("CHIFFRE D'AFFAIRES", f"{prix_revente_total_flash/1000:.0f} k€")
         else:
             with c5:
-                prix_revente_total_flash = st.number_input("Prix Global", value=340000, step=5000, key="f_revente_global")
+                # Renommage "Prix Global" -> "Prix de sortie"
+                prix_revente_total_flash = st.number_input("Prix de sortie", value=340000, step=5000, key="f_revente_global")
             with c6:
                 if surf_flash > 0:
                     display_blue_result("SOIT AU M²", f"{prix_revente_total_flash/surf_flash:,.0f} €")
@@ -175,9 +175,10 @@ with tab_flash:
 
     # --- SYNTHÈSE (FORCÉE EN HTML/CSS 2 COLONNES) ---
     st.markdown("### 📊 Synthèse")
+    # Renommage des libellés
     display_custom_kpi(
-        "COÛT TOTAL", f"{cout_total_flash/1000:.0f} k€",
-        "MARGE BRUTE", f"{marge_flash/1000:.0f} k€"
+        "COÛT DE L'OPÉRATION", f"{cout_total_flash/1000:.0f} k€",
+        "MARGE", f"{marge_flash/1000:.0f} k€"
     )
 
     # Espace vide pour le scroll
@@ -190,7 +191,7 @@ with tab_flash:
 
     html_footer = f"""
     <div class="fixed-footer">
-        <div class="footer-label">RENTABILITÉ BRUTE</div>
+        <div class="footer-label">RENTABILITÉ</div>
         <div class="footer-value" style="color: {color_renta};">
             {renta_flash:.1f} %
         </div>
